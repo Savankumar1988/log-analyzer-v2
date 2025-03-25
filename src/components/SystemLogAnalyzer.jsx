@@ -1,132 +1,340 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  FlexibleLineChart, 
-  FlexibleBarChart, 
-  calculateMetricStats 
-} from './LogChartComponents';
-import { useLogParser } from './useLogParser';
-
-// Configuration for log parsing
-const LOG_PARSER_CONFIG = {
-  maxFileSize: 20 * 1024 * 1024, // 20MB
-  allowedFileTypes: ['.log', '.txt'],
-  strictParsing: false
-};
-
-// Helper to format memory
-const formatMemory = (kb) => {
-  if (!kb) return '0 KB';
-  if (kb < 1024) return `${kb.toLocaleString()} KB`;
-  if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(2)} MB`;
-  return `${(kb / 1024 / 1024).toFixed(2)} GB`;
-};
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import _ from 'lodash';
 
 const SystemLogAnalyzer = () => {
+  const [loading, setLoading] = useState(true);
+  const [logData, setLogData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [activeMetric, setActiveMetric] = useState('system');
+  const [error, setError] = useState('');
+  const [timeRange, setTimeRange] = useState({ start: null, end: null });
+  
+  // Format timestamp for display
+  const formatTimestamp = (timestamp) => {
+  const date = new Date(timestamp * 1000); // Convert epoch seconds to milliseconds
+  return date.toISOString().replace('T', ' ').substr(0, 19); // Format as YYYY-MM-DD HH:MM:SS in UTC
+};
 
-  // Use the custom log parser hook
-  const { 
-    loading, 
-    error, 
-    logData, 
-    parseLogFile 
-  } = useLogParser(LOG_PARSER_CONFIG);
+ const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  // Handle file upload
-  const handleFileUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      parseLogFile(file);
+  setLoading(true);
+  setError('');
+  
+  const reader = new FileReader();
+  
+  reader.onload = (e) => {
+    try {
+      const fileContent = e.target.result;
+      const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+      
+      // Parse Robust stats logs
+      const robustStats = [];
+      // Parse OverloadManager entries
+      const overloadManager = [];
+      
+      // Your existing parsing logic here - copy it from the useEffect
+      lines.forEach(line => {
+        if (line.includes("Robust - stats")) {
+const parts = line.split('|');
+            const timestamp = parseFloat(parts[0]);
+            
+            const data = {
+              timestamp,
+              timestampFormatted: formatTimestamp(timestamp),
+              http: 0,
+              https: 0,
+              clientInProgress: 0,
+              done: 0,
+              fwdInProgress: 0,
+              flit: 0,
+              freeFds: 0,
+              websocketsInProgress: 0,
+              memRSS: 0,
+              appUsed: 0,
+              totalMem: 0,
+              tcpMem: 0,
+              inPressure: "N",
+              cpuAll: 0,
+              avgManagerCycle: 0
+            };
+            
+            // Extract HTTP/HTTPS
+            const httpMatch = line.match(/Accepts: http\/https (\d+)\/(\d+)/);
+            if (httpMatch) {
+              data.http = parseInt(httpMatch[1]);
+              data.https = parseInt(httpMatch[2]);
+            }
+            
+            // Extract client in-progress
+            const clientMatch = line.match(/client: in-progress (\d+)/);
+            if (clientMatch) {
+              data.clientInProgress = parseInt(clientMatch[1]);
+            }
+            
+            // Extract done
+            const doneMatch = line.match(/done (\d+),/);
+            if (doneMatch) {
+              data.done = parseInt(doneMatch[1]);
+            }
+            
+            // Extract fwd in-progress
+            const fwdMatch = line.match(/fwd: in progress (\d+)/);
+            if (fwdMatch) {
+              data.fwdInProgress = parseInt(fwdMatch[1]);
+            }
+            
+            // Extract flit
+            const flitMatch = line.match(/flit (\d+)%/);
+            if (flitMatch) {
+              data.flit = parseInt(flitMatch[1]);
+            }
+            
+            // Extract FreeFds
+            const freeFdsMatch = line.match(/FreeFds: (\d+)/);
+            if (freeFdsMatch) {
+              data.freeFds = parseInt(freeFdsMatch[1]);
+            }
+            
+            // Extract websockets in-progress
+            const websocketsMatch = line.match(/websockets: in-progress (\d+)/);
+            if (websocketsMatch) {
+              data.websocketsInProgress = parseInt(websocketsMatch[1]);
+            }
+            
+            // Extract memory values
+            const memRSSMatch = line.match(/Mem RSS (\d+) KB/);
+            if (memRSSMatch) {
+              data.memRSS = parseInt(memRSSMatch[1]);
+            }
+            
+            const appUsedMatch = line.match(/app used (\d+) KB/);
+            if (appUsedMatch) {
+              data.appUsed = parseInt(appUsedMatch[1]);
+            }
+            
+            const totalMemMatch = line.match(/totalMem (\d+) KB/);
+            if (totalMemMatch) {
+              data.totalMem = parseInt(totalMemMatch[1]);
+            }
+            
+            // Extract TCP Mem
+            const tcpMemMatch = line.match(/TCP Mem (\d+) KB/);
+            if (tcpMemMatch) {
+              data.tcpMem = parseInt(tcpMemMatch[1]);
+            }
+            
+            // Extract pressure
+            const pressureMatch = line.match(/in pressure: ([YN])/);
+            if (pressureMatch) {
+              data.inPressure = pressureMatch[1];
+            }
+            
+            // Extract CPU all
+            const cpuAllMatch = line.match(/CPU: all (\d+)%/);
+            if (cpuAllMatch) {
+              data.cpuAll = parseInt(cpuAllMatch[1]);
+            }
+            
+            // Extract AVG manager cycle
+            const avgManagerMatch = line.match(/AVG manager cycle (\d+)us/);
+            if (avgManagerMatch) {
+              data.avgManagerCycle = parseInt(avgManagerMatch[1]);
+            }
+            
+            robustStats.push(data);
+          } else if (line.includes("crp::OverloadManager")) {
+            const parts = line.split('|');
+            const timestamp = parseFloat(parts[0]);
+            
+            const data = {
+              timestamp,
+              timestampFormatted: formatTimestamp(timestamp),
+              type: "",
+              triggerPct: 0,
+              denyPct: 0,
+              metrics: {
+                cpu: 0,
+                mem: 0,
+                reqs: 0
+              },
+              runQ: 0
+            };
+            
+            // Determine the type of OverloadManager entry
+            if (line.includes("addCandidateTarget")) {
+              data.type = "addCandidateTarget";
+              
+              // Extract trigger and deny percentages
+              const pctMatch = line.match(/trigger_pct:(\d+\.\d+)% deny_pct:(\d+\.\d+)%/);
+              if (pctMatch) {
+                data.triggerPct = parseFloat(pctMatch[1]);
+                data.denyPct = parseFloat(pctMatch[2]);
+              }
+              
+              // Extract metrics
+              const metricsMatch = line.match(/metrics \(cpu:(\d+)ms mem:(\d+)KB reqs:(\d+)\)/);
+              if (metricsMatch) {
+                data.metrics.cpu = parseInt(metricsMatch[1]);
+                data.metrics.mem = parseInt(metricsMatch[2]);
+                data.metrics.reqs = parseInt(metricsMatch[3]);
+              }
+            } else if (line.includes("processMainLoop")) {
+              data.type = "processMainLoop";
+              
+              // Extract runQ
+              const runQMatch = line.match(/runQ:(\d+\.\d+)/);
+              if (runQMatch) {
+                data.runQ = parseFloat(runQMatch[1]);
+              }
+            }
+            
+            overloadManager.push(data);
+  
+        }
+      });
+      
+      // Set the data
+      if (robustStats.length > 0 && overloadManager.length > 0) {
+        const data = {
+          robustStats,
+          overloadManager,
+          addCandidateTargets: overloadManager.filter(entry => entry.type === "addCandidateTarget"),
+          processMainLoops: overloadManager.filter(entry => entry.type === "processMainLoop")
+        };
+        
+        const startTime = Math.min(
+          robustStats[0].timestamp,
+          overloadManager[0].timestamp
+        );
+        
+        const endTime = Math.max(
+          robustStats[robustStats.length - 1].timestamp,
+          overloadManager[overloadManager.length - 1].timestamp
+        );
+        
+        setTimeRange({ start: startTime, end: endTime });
+        setLogData(data);
+      } else {
+        setError('Failed to parse any log data');
+      }
+    } catch (err) {
+      setError('Error analyzing log file: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Prepare chart data and configurations
-  const prepareChartData = (data, metrics) => {
+  
+  reader.onerror = () => {
+    setError('Failed to read file');
+    setLoading(false);
+  };
+  
+  reader.readAsText(file);
+}; 
+  // Format numbers for display
+  const formatNumber = (num) => {
+    return num ? num.toLocaleString() : '0';
+  };
+  
+  // Format memory values
+  const formatMemory = (kb) => {
+    if (!kb) return '0 KB';
+    if (kb < 1024) return `${kb.toLocaleString()} KB`;
+    if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(2)} MB`;
+    return `${(kb / 1024 / 1024).toFixed(2)} GB`;
+  };
+  
+  // Convert time series data for charts
+  const prepareTimeSeriesData = (data, metrics) => {
     if (!data) return [];
     
     return data.map(entry => {
       const result = { 
         timestamp: entry.timestamp,
-        formattedTime: entry.timestampFormatted
+        formattedTime: formatTimestamp(entry.timestamp)
       };
       
       metrics.forEach(metric => {
-        result[metric] = entry[metric];
+        if (typeof metric === 'string') {
+          result[metric] = entry[metric];
+        } else if (metric.path) {
+          // Handle nested paths like metrics.cpu
+          let value = entry;
+          const parts = metric.path.split('.');
+          for (const part of parts) {
+            value = value[part];
+          }
+          result[metric.name] = value;
+        }
       });
       
       return result;
     });
   };
-
-  // Render different sections based on active tab and metric
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="text-center py-12">
-          <div className="text-lg">Loading and analyzing log data...</div>
-          <div className="mt-2 text-gray-500">This may take a moment</div>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-          {error}
-        </div>
-      );
-    }
-
-    if (!logData) {
-      return (
-        <div className="text-center py-12 text-gray-500">
-          No log data loaded. Please upload a log file.
-        </div>
-      );
-    }
-
-    // Render based on active tab
-    switch (activeTab) {
-      case 'overview':
-        return renderSystemOverview();
-      case 'robustStats':
-        return renderRobustStats();
-      case 'overloadManager':
-        return renderOverloadManager();
-      default:
-        return null;
-    }
-  };
-
-  // System Overview rendering
-  const renderSystemOverview = () => {
-    if (!logData?.robustStats?.length) return <div>No data available</div>;
-
-    const lastStats = logData.robustStats[logData.robustStats.length - 1];
+  
+  // Get statistics for a particular metric
+  const getMetricStats = (data, metricPath) => {
+    if (!data || !data.length) return { min: 0, max: 0, avg: 0, median: 0 };
+    
+    // Extract values
+    const values = data.map(entry => {
+      if (typeof metricPath === 'string') {
+        return entry[metricPath] || 0;
+      } else if (metricPath.path) {
+        let value = entry;
+        const parts = metricPath.path.split('.');
+        for (const part of parts) {
+          value = value && value[part];
+        }
+        return value || 0;
+      }
+      return 0;
+    });
     
     // Calculate statistics
-    const cpuStats = calculateMetricStats(logData.robustStats, 'cpuAll');
-    const memStats = calculateMetricStats(logData.robustStats, 'memRSS');
-    const httpStats = calculateMetricStats(logData.robustStats, 'https');
-
-    // Prepare chart data
-    const cpuData = prepareChartData(logData.robustStats, ['cpuAll']);
-    const memData = prepareChartData(logData.robustStats, ['memRSS']);
-    const httpData = prepareChartData(logData.robustStats, ['http', 'https']);
-
+    values.sort((a, b) => a - b);
+    const min = values[0];
+    const max = values[values.length - 1];
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    const avg = sum / values.length;
+    const median = values.length % 2 === 0
+      ? (values[values.length / 2] + values[(values.length / 2) - 1]) / 2
+      : values[Math.floor(values.length / 2)];
+    
+    return { min, max, avg, median };
+  };
+  
+  // Render system overview dashboard
+  const renderSystemOverview = () => {
+    if (!logData || !logData.robustStats.length) return <div>No data available</div>;
+    
+    const lastStats = logData.robustStats[logData.robustStats.length - 1];
+    const cpuStats = getMetricStats(logData.robustStats, 'cpuAll');
+    const memStats = getMetricStats(logData.robustStats, 'memRSS');
+    const httpStats = getMetricStats(logData.robustStats, 'https');
+    
+    // Prepare time series data for CPU, Memory, and HTTP requests
+    const cpuData = prepareTimeSeriesData(logData.robustStats, ['cpuAll']);
+    const memData = prepareTimeSeriesData(logData.robustStats, ['memRSS']);
+    const httpData = prepareTimeSeriesData(logData.robustStats, ['http', 'https']);
+    const clientData = prepareTimeSeriesData(logData.robustStats, ['clientInProgress', 'done']);
+    
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Key metrics cards */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">System Overview</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">CPU Usage</h3>
             <div className="text-3xl font-bold text-blue-600">{lastStats.cpuAll}%</div>
             <div className="text-sm text-gray-500">
-              Avg: {cpuStats.avg.toFixed(1)}% | Max: {cpuStats.max}%
+              Avg: {cpuStats.avg.toFixed(1)}% | Min: {cpuStats.min}% | Max: {cpuStats.max}%
             </div>
           </div>
-
+          
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">Memory (RSS)</h3>
             <div className="text-3xl font-bold text-green-600">{formatMemory(lastStats.memRSS)}</div>
@@ -134,118 +342,441 @@ const SystemLogAnalyzer = () => {
               Avg: {formatMemory(memStats.avg)} | Max: {formatMemory(memStats.max)}
             </div>
           </div>
-
+          
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">HTTPS Requests</h3>
-            <div className="text-3xl font-bold text-purple-600">{lastStats.https.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-purple-600">{formatNumber(lastStats.https)}</div>
             <div className="text-sm text-gray-500">
-              Avg: {httpStats.avg.toFixed(0)} | Max: {httpStats.max.toLocaleString()}
+              Avg: {httpStats.avg.toFixed(0)} | Max: {formatNumber(httpStats.max)}
             </div>
           </div>
         </div>
-
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">CPU Utilization Over Time</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={cpuData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, Math.max(100, cpuStats.max)]} />
+                <Tooltip formatter={(value) => [`${value}%`, 'CPU']} labelFormatter={(time) => `Time: ${time}`} />
+                <Line type="monotone" dataKey="cpuAll" stroke="#3182ce" name="CPU %" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">Memory Usage Over Time</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={memData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis domain={['dataMin', 'dataMax']} tickFormatter={(value) => `${(value / 1024 / 1024).toFixed(1)} GB`} />
+                <Tooltip formatter={(value) => [formatMemory(value), 'Memory RSS']} labelFormatter={(time) => `Time: ${time}`} />
+                <Line type="monotone" dataKey="memRSS" stroke="#38a169" name="Memory RSS" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Detailed charts */}
-          <FlexibleLineChart 
-            data={cpuData}
-            lines={[{ dataKey: 'cpuAll', name: 'CPU Usage' }]}
-            title="CPU Utilization Over Time"
-            observations={[
-              "CPU utilization shows consistent performance",
-              `Average CPU usage is ${cpuStats.avg.toFixed(1)}%`,
-              `Peaks reach up to ${cpuStats.max}%`
-            ]}
-          />
-
-          <FlexibleLineChart 
-            data={memData}
-            lines={[{ dataKey: 'memRSS', name: 'Memory RSS' }]}
-            title="Memory Usage Over Time"
-            observations={[
-              `Average memory usage is ${formatMemory(memStats.avg)}`,
-              "Memory consumption remains stable",
-              "No significant memory leaks detected"
-            ]}
-          />
-
-          <FlexibleLineChart 
-            data={httpData}
-            lines={[
-              { dataKey: 'http', name: 'HTTP Requests' },
-              { dataKey: 'https', name: 'HTTPS Requests' }
-            ]}
-            title="HTTP/HTTPS Requests"
-            observations={[
-              "HTTPS traffic significantly higher than HTTP",
-              `Average HTTPS requests: ${httpStats.avg.toFixed(0)}`,
-              `Peak HTTPS requests: ${httpStats.max.toLocaleString()}`
-            ]}
-          />
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">HTTP/HTTPS Requests</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={httpData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="http" stroke="#3182ce" name="HTTP" dot={false} />
+                <Line type="monotone" dataKey="https" stroke="#805ad5" name="HTTPS" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">Client Requests</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={clientData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="clientInProgress" stroke="#e53e3e" name="In Progress" dot={false} />
+                <Line type="monotone" dataKey="done" stroke="#38a169" name="Done" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     );
   };
 
-  // Robust Stats rendering (similar structure to overview)
+  // Render Robust Stats details
   const renderRobustStats = () => {
-    // Similar implementation to overview, with more detailed metrics
-    // Implement additional metric selections and charts
-    return <div>Robust Stats Details</div>;
+    if (!logData || !logData.robustStats.length) return <div>No data available</div>;
+    
+    // Determine which metrics to show based on the active metric selection
+    let metrics = [];
+    let chartTitle = "";
+    
+    switch (activeMetric) {
+      case 'http':
+        metrics = ['http', 'https'];
+        chartTitle = "HTTP/HTTPS Requests";
+        break;
+      case 'client':
+        metrics = ['clientInProgress', 'done', 'fwdInProgress'];
+        chartTitle = "Client Requests";
+        break;
+      case 'memory':
+        metrics = ['memRSS', 'appUsed', 'totalMem'];
+        chartTitle = "Memory Usage (KB)";
+        break;
+      case 'network':
+        metrics = ['freeFds', 'websocketsInProgress', 'tcpMem'];
+        chartTitle = "Network Resources";
+        break;
+      case 'performance':
+        metrics = ['cpuAll', 'flit', 'avgManagerCycle'];
+        chartTitle = "Performance Metrics";
+        break;
+      default:
+        metrics = ['cpuAll', 'clientInProgress'];
+        chartTitle = "System Load";
+    }
+    
+    const chartData = prepareTimeSeriesData(logData.robustStats, metrics);
+    
+    return (
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Robust Stats Analysis</h2>
+          
+          <div className="flex space-x-2">
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('system')}
+            >
+              System
+            </button>
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'http' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('http')}
+            >
+              HTTP
+            </button>
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'client' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('client')}
+            >
+              Client
+            </button>
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'memory' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('memory')}
+            >
+              Memory
+            </button>
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'network' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('network')}
+            >
+              Network
+            </button>
+            <button 
+              className={`px-3 py-1 rounded text-sm ${activeMetric === 'performance' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              onClick={() => setActiveMetric('performance')}
+            >
+              Performance
+            </button>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow mb-6">
+          <h3 className="text-lg font-medium mb-3">{chartTitle}</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              {metrics.map((metric, index) => (
+                <Line 
+                  key={metric}
+                  type="monotone" 
+                  dataKey={metric} 
+                  stroke={index === 0 ? "#3182ce" : index === 1 ? "#805ad5" : "#e53e3e"} 
+                  dot={false} 
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-3">Raw Data</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTP</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTPS</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client In Progress</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Done</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fwd In Progress</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU All</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mem RSS</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logData.robustStats.slice(0, 10).map((entry, index) => (
+                  <tr key={index}>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.timestampFormatted}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.http}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.https}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.clientInProgress}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.done}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.fwdInProgress}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.cpuAll}%</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{formatMemory(entry.memRSS)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Showing 10 of {logData.robustStats.length} entries
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  // Overload Manager rendering
+  // Render OverloadManager analysis
   const renderOverloadManager = () => {
-    // Detailed OverloadManager analysis
-    return <div>OverloadManager Details</div>;
+    if (!logData || !logData.addCandidateTargets.length) return <div>No data available</div>;
+    
+    const targetData = prepareTimeSeriesData(logData.addCandidateTargets, ['triggerPct', 'denyPct']);
+    const metricsData = prepareTimeSeriesData(
+      logData.addCandidateTargets, 
+      [
+        { name: 'cpuMs', path: 'metrics.cpu' },
+        { name: 'memKB', path: 'metrics.mem' },
+        { name: 'reqs', path: 'metrics.reqs' }
+      ]
+    );
+    const runQData = prepareTimeSeriesData(logData.processMainLoops, ['runQ']);
+    
+    // Calculate statistics
+    const triggerStats = getMetricStats(logData.addCandidateTargets, 'triggerPct');
+    const denyStats = getMetricStats(logData.addCandidateTargets, 'denyPct');
+    const cpuStats = getMetricStats(logData.addCandidateTargets, { path: 'metrics.cpu' });
+    const memStats = getMetricStats(logData.addCandidateTargets, { path: 'metrics.mem' });
+    const reqsStats = getMetricStats(logData.addCandidateTargets, { path: 'metrics.reqs' });
+    const runQStats = getMetricStats(logData.processMainLoops, 'runQ');
+    
+    return (
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">OverloadManager Analysis</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-2">Trigger Percentage</h3>
+            <div className="text-3xl font-bold text-orange-600">{logData.addCandidateTargets[logData.addCandidateTargets.length - 1].triggerPct.toFixed(1)}%</div>
+            <div className="text-sm text-gray-500">
+              Avg: {triggerStats.avg.toFixed(1)}% | Max: {triggerStats.max.toFixed(1)}%
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-2">Deny Percentage</h3>
+            <div className="text-3xl font-bold text-red-600">{logData.addCandidateTargets[logData.addCandidateTargets.length - 1].denyPct.toFixed(1)}%</div>
+            <div className="text-sm text-gray-500">
+              Avg: {denyStats.avg.toFixed(1)}% | Max: {denyStats.max.toFixed(1)}%
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-2">Run Queue</h3>
+            <div className="text-3xl font-bold text-blue-600">{logData.processMainLoops[logData.processMainLoops.length - 1].runQ.toFixed(3)}</div>
+            <div className="text-sm text-gray-500">
+              Avg: {runQStats.avg.toFixed(3)} | Max: {runQStats.max.toFixed(3)}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">Trigger & Deny Percentages</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={targetData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, Math.max(100, denyStats.max * 1.1)]} />
+                <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
+                <Legend />
+                <Line type="monotone" dataKey="triggerPct" stroke="#ed8936" name="Trigger %" dot={false} />
+                <Line type="monotone" dataKey="denyPct" stroke="#e53e3e" name="Deny %" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">Run Queue Over Time</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={runQData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, runQStats.max * 1.1]} />
+                <Tooltip formatter={(value) => [`${value.toFixed(3)}`]} />
+                <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="Run Queue" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-medium mb-3">Metrics Over Time</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={metricsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip />
+                <Legend />
+                <Line yAxisId="left" type="monotone" dataKey="cpuMs" stroke="#3182ce" name="CPU (ms)" dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="memKB" stroke="#38a169" name="Memory (KB)" dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="reqs" stroke="#805ad5" name="Requests" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-3">Raw Data</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trigger %</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deny %</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU (ms)</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Memory (KB)</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Run Queue</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logData.addCandidateTargets.slice(0, 10).map((entry, index) => {
+                  const mainLoop = logData.processMainLoops.find(m => Math.abs(m.timestamp - entry.timestamp) < 0.01);
+                  return (
+                    <tr key={index}>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.timestampFormatted}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.triggerPct.toFixed(1)}%</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.denyPct.toFixed(1)}%</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.metrics.cpu}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.metrics.mem}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.metrics.reqs}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs">{mainLoop ? mainLoop.runQ.toFixed(3) : 'N/A'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Showing 10 of {logData.addCandidateTargets.length} entries
+          </div>
+        </div>
+      </div>
+    );
   };
 
+  // Main render function
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">System Log Analyzer</h1>
       
-      {/* File Upload Section */}
       <div className="mb-6">
-        <label 
-          htmlFor="log-file-upload" 
-          className="block p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-50"
-        >
-          <div className="text-lg mb-2">Upload Log File</div>
-          <p className="text-sm text-gray-500">
-            Select your log file (max 20MB, .log or .txt)
-          </p>
-          <input
-            id="log-file-upload"
-            type="file"
-            className="hidden"
-            onChange={handleFileUpload}
-            accept=".log,.txt"
-          />
-        </label>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="mb-6 border-b">
-        <div className="flex space-x-4">
-          {['overview', 'robustStats', 'overloadManager'].map(tab => (
-            <button 
-              key={tab}
-              className={`pb-2 px-2 capitalize ${
-                activeTab === tab 
-                  ? 'border-b-2 border-blue-500 font-medium' 
-                  : 'text-gray-500'
-              }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+      <label 
+        htmlFor="file-upload" 
+        className="block p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-50"
+      >
+        <div className="text-lg mb-2">Upload Log File</div>
+        <p className="text-sm text-gray-500">Select your log file</p>
+        <input
+          id="file-upload"
+          type="file"
+          className="hidden"
+          onChange={handleFileUpload}
+          accept=".log,.txt"
+        />
+      </label>
+    </div>
+      {loading && (
+        <div className="text-center py-12">
+          <div className="text-lg">Loading and analyzing log data...</div>
+          <div className="mt-2 text-gray-500">This may take a moment</div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      {renderContent()}
+      )}
+      
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+      
+      {!loading && !error && logData && (
+        <div>
+          <div className="mb-6 bg-gray-100 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Time range:</span> {formatTimestamp(timeRange.start)} to {formatTimestamp(timeRange.end)}
+            </div>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Log entries:</span> {logData.robustStats.length} Robust stats, {logData.overloadManager.length} OverloadManager entries
+            </div>
+          </div>
+          
+          <div className="mb-6 border-b">
+            <div className="flex space-x-4">
+              <button 
+                className={`pb-2 px-2 ${activeTab === 'overview' ? 'border-b-2 border-blue-500 font-medium' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                Overview
+              </button>
+              <button 
+                className={`pb-2 px-2 ${activeTab === 'robustStats' ? 'border-b-2 border-blue-500 font-medium' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('robustStats')}
+              >
+                Robust Stats
+              </button>
+              <button 
+                className={`pb-2 px-2 ${activeTab === 'overloadManager' ? 'border-b-2 border-blue-500 font-medium' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('overloadManager')}
+              >
+                OverloadManager
+              </button>
+            </div>
+          </div>
+          
+          {activeTab === 'overview' && renderSystemOverview()}
+          {activeTab === 'robustStats' && renderRobustStats()}
+          {activeTab === 'overloadManager' && renderOverloadManager()}
+        </div>
+      )}
     </div>
   );
 };
 
 export default SystemLogAnalyzer;
+
