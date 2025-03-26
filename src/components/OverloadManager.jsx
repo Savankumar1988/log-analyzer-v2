@@ -85,13 +85,13 @@ const OverloadManager = ({ logData }) => {
                   if (!dataPoint) return `Time: ${time}`;
                   
                   let triggerInfo = '';
-                  if (dataPoint.triggerType === 'cpu') {
-                    triggerInfo = `CPU: ${dataPoint.triggerValue?.toFixed(3)}`;
-                  } else if (dataPoint.runQ) {
-                    triggerInfo = `RunQ: ${dataPoint.runQ?.toFixed(3)}`;
+                  if (dataPoint.triggerType === 'cpu' && dataPoint.triggerValue != null) {
+                    triggerInfo = `CPU: ${Number(dataPoint.triggerValue).toFixed(3)}`;
+                  } else if (dataPoint.runQ != null) {
+                    triggerInfo = `RunQ: ${Number(dataPoint.runQ).toFixed(3)}`;
                   }
                   
-                  return `Time: ${time}\nRule: ${dataPoint.ruleName || 'N/A'}\n${triggerInfo}`;
+                  return `Time: ${time}\nRule: ${dataPoint.ruleName || 'N/A'}\n${triggerInfo || 'No trigger info'}`;
                 }}
               />
               <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="Run Queue" dot={false} />
