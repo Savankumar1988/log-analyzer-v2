@@ -184,10 +184,11 @@ const SystemLogAnalyzer = () => {
             } else if (line.includes("processMainLoop")) {
               data.type = "processMainLoop";
 
-              // Extract runQ
-              const runQMatch = line.match(/runQ:(\d+\.\d+)/);
-              if (runQMatch) {
-                data.runQ = parseFloat(runQMatch[1]);
+              // Extract trigger reason and runQ
+              const triggerMatch = line.match(/triggered by ([^:]+):(\d+\.\d+)/);
+              if (triggerMatch) {
+                data.triggerReason = triggerMatch[1];
+                data.runQ = parseFloat(triggerMatch[2]);
               }
             }
 

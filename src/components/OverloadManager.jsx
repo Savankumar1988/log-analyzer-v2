@@ -15,7 +15,7 @@ const OverloadManager = ({ logData }) => {
       { name: 'reqs', path: 'metrics.reqs' }
     ]
   );
-  const runQData = prepareTimeSeriesData(logData.processMainLoops, ['runQ']);
+  const processLoopData = prepareTimeSeriesData(logData.processMainLoops, ['runQ', 'triggerReason']);
 
   // Calculate statistics
   const triggerStats = getMetricStats(logData.addCandidateTargets, 'triggerPct');
@@ -69,13 +69,22 @@ const OverloadManager = ({ logData }) => {
         </div>
 
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">Run Queue Over Time</h3>
+          <h3 className="text-lg font-medium mb-3">Process Metrics Over Time</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={runQData}>
+            <LineChart data={processLoopData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis domain={[0, runQStats.max * 1.1]} />
-              <Tooltip formatter={(value) => [`${value.toFixed(3)}`]} />
+              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
+              <YAxis />
+              <Tooltip 
+                formatter={(value, name, props) => {
+                  if (name === 'runQ') return [value.toFixed(3), 'Run Queue'];
+                  return [value];
+                }}
+                labelFormatter={(time, entry) => {
+                  const dataPoint = processLoopData[entry[0].payload.index];
+                  return `Time: ${time}\nTriggered by: ${dataPoint.triggerReason}`;
+                }}
+              />
               <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="Run Queue" dot={false} />
             </LineChart>
           </ResponsiveContainer>
