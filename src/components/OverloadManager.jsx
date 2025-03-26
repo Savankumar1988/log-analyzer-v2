@@ -45,10 +45,10 @@ const OverloadManager = ({ logData }) => {
         />
 
         <StatCard
-          title="Run Queue"
-          value={`${logData.processMainLoops[logData.processMainLoops.length - 1].runQ.toFixed(3)}`}
+          title="Trigger Metric"
+          value={`${logData.processMainLoops[logData.processMainLoops.length - 1].triggerValue.toFixed(3)}`}
           color="blue"
-          details={`Avg: ${runQStats.avg.toFixed(3)} | Max: ${runQStats.max.toFixed(3)}`}
+          details={`Rule: ${logData.addCandidateTargets[logData.addCandidateTargets.length - 1].ruleName || 'N/A'} | Triggered by: ${logData.processMainLoops[logData.processMainLoops.length - 1].triggerMetric || 'N/A'}`}
         />
       </div>
 
