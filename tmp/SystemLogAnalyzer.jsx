@@ -359,7 +359,7 @@ const SystemLogAnalyzer = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={cpuData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis domain={[0, Math.max(100, cpuStats.max)]} />
                 <Tooltip formatter={(value) => [`${value}%`, 'CPU']} labelFormatter={(time) => `Time: ${time}`} />
                 <Line type="monotone" dataKey="cpuAll" stroke="#3182ce" name="CPU %" dot={false} />
@@ -372,7 +372,7 @@ const SystemLogAnalyzer = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={memData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis domain={['dataMin', 'dataMax']} tickFormatter={(value) => `${(value / 1024 / 1024).toFixed(1)} GB`} />
                 <Tooltip formatter={(value) => [formatMemory(value), 'Memory RSS']} labelFormatter={(time) => `Time: ${time}`} />
                 <Line type="monotone" dataKey="memRSS" stroke="#38a169" name="Memory RSS" dot={false} />
@@ -387,7 +387,7 @@ const SystemLogAnalyzer = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={httpData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -402,7 +402,7 @@ const SystemLogAnalyzer = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={clientData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -502,7 +502,7 @@ const SystemLogAnalyzer = () => {
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
               <YAxis />
               <Tooltip />
               <Legend />
@@ -618,7 +618,7 @@ const SystemLogAnalyzer = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={targetData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis domain={[0, Math.max(100, denyStats.max * 1.1)]} />
                 <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
                 <Legend />
@@ -635,7 +635,7 @@ const SystemLogAnalyzer = () => {
 
                 data={runQData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20}/>
                 <YAxis />
                 <Tooltip formatter={(value) => [`${value.toFixed(3)}`]} />
                 <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="RunQ" dot={false} />

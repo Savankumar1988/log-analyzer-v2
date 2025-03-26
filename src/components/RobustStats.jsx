@@ -90,12 +90,13 @@ const RobustStats = ({ logData }) => {
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
-  dataKey="formattedTime" 
-  tick={{ fontSize: 12 }} 
-  angle={-45} 
-  textAnchor="end" 
-  height={60} 
-/>
+              dataKey="formattedTime" 
+              tick={{ fontSize: 12 }} 
+              angle={-45} 
+              textAnchor="end" 
+              height={80} 
+              dy={20}
+            />
             <YAxis />
             <Tooltip />
             <Legend />
