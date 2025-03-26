@@ -44,7 +44,11 @@ const mergeLogEntries = (logData) => {
 };
 
 const OverloadManager = ({ data }) => {
-  const mergedData = mergeLogEntries(data);
+  if (!data || !Array.isArray(data)) {
+    return <div>No data available for analysis</div>;
+  }
+  
+  const mergedData = mergeLogEntries(data) || [];
 
   return (
     <div>
