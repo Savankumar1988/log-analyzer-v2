@@ -1,58 +1,59 @@
+
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { prepareTimeSeriesData, getMetricStats } from '../utils/chartUtils';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { getMetricStats } from '../utils/logParser';
 
 const OverloadManager = ({ logData }) => {
-  if (!logData || !logData.addCandidateTargets.length) return <div>No data available</div>;
+  if (!logData || !logData.processMainLoops || !logData.addCandidateTargets) {
+    return <div>No data available for OverloadManager analysis</div>;
+  }
 
-  const targetData = prepareTimeSeriesData(logData.addCandidateTargets, ['triggerPct', 'denyPct']);
-  const metricsData = prepareTimeSeriesData(
-    logData.addCandidateTargets, 
-    [
-      { name: 'cpuMs', path: 'metrics.cpu' },
-      { name: 'memKB', path: 'metrics.mem' },
-      { name: 'reqs', path: 'metrics.reqs' }
-    ]
-  );
-  const processLoopData = prepareTimeSeriesData(logData.processMainLoops, ['runQ']);
+  const runQData = logData.processMainLoops.map((entry, index) => ({
+    time: index,
+    runQ: entry.runQ || 0,
+    ruleName: entry.ruleName || 'N/A',
+    triggerType: entry.triggerType,
+    triggerValue: entry.triggerValue
+  }));
 
   return (
     <div className="mb-6">
       <h2 className="text-xl font-semibold mb-4">OverloadManager Analysis</h2>
-      <div className="grid grid-cols-1 gap-4">
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2">Run Queue</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
-                data={processLoopData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="formattedTime" 
-                  tick={{ fontSize: 12 }} 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={80} 
-                  dy={20}
-                />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value) => {
-                    return value != null ? [value.toFixed(3), 'Run Queue'] : ['N/A', 'Run Queue'];
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="runQ" 
-                  stroke="#3182ce" 
-                  name="Run Queue" 
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <h3 className="text-lg font-medium mb-3">Run Queue</h3>
+        <div style={{ width: '100%', height: 300 }}>
+          <LineChart
+            data={runQData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" />
+            <YAxis />
+            <Tooltip
+              formatter={(value, name) => {
+                if (name === 'runQ') {
+                  return value?.toFixed(3) || '0';
+                }
+                return value;
+              }}
+              labelFormatter={(time) => {
+                const dataPoint = runQData[time];
+                if (!dataPoint) return `Time: ${time}`;
+                
+                return `Time: ${time}\nRule: ${dataPoint.ruleName || 'N/A'}`;
+              }}
+            />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey="runQ" 
+              stroke="#3182ce" 
+              name="Run Queue" 
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
         </div>
       </div>
     </div>
