@@ -27,7 +27,7 @@ const StatCard = ({
     return (
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-medium mb-2">{title}</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {min !== undefined && (
             <div>
               <div className="text-xs text-gray-500">Min</div>
