@@ -15,9 +15,15 @@ const GhostMonCharts = ({ logData }) => {
   const hasWData = typeWData.length > 0;
   const hasSData = typeSData.length > 0;
 
-  // Custom formatters for the charts
-  const formatFlyteload = (value) => formatNumber(value);
-  const formatHits = (value) => value.toFixed(2);
+  // Custom formatter for tooltips
+  const formatTooltip = (value, name) => {
+    if (name === 'flyteload') return [formatNumber(value), 'Flyteload'];
+    if (name === 'hits') return [value.toFixed(2), 'Hits'];
+    if (name === 'suspendflag') return [value, 'Suspend Flag'];
+    if (name === 'suspendlevel') return [value, 'Suspend Level'];
+    return [value, name];
+  };
+  
 
   // Helper function to create chart sections for a specific data set
   const createChartSection = (data, keyType) => {
@@ -27,14 +33,15 @@ const GhostMonCharts = ({ logData }) => {
     const typeSuffix = keyType ? ` (${keyType})` : '';
     
     return (
-      <div className="space-y-6 mb-8">
+      <div className="grid grid-cols-1 gap-6 mb-8">
         {/* Flyteload chart */}
         <MetricChart
           data={flyteloadChartData}
           title={`Flyteload Over Time${typeSuffix}`}
           metrics={[{ name: 'flyteload', color: keyType === 'W' ? '#3182ce' : '#38a169' }]}
-          tooltipFormatter={(value) => formatFlyteload(value)}
-          height={300}
+          tooltipFormatter={formatTooltip}
+          height={350}
+          yAxisFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(1)}k` : value}
         />
         
         {/* Hits chart */}
@@ -42,8 +49,9 @@ const GhostMonCharts = ({ logData }) => {
           data={hitsChartData}
           title={`Hits Over Time${typeSuffix}`}
           metrics={[{ name: 'hits', color: keyType === 'W' ? '#805ad5' : '#d53f8c' }]}
-          tooltipFormatter={(value) => formatHits(value)}
-          height={300}
+          tooltipFormatter={formatTooltip}
+          height={350}
+          yAxisFormatter={(value) => value.toFixed(2)}
         />
         
         {/* Combined chart for correlation */}
@@ -54,10 +62,8 @@ const GhostMonCharts = ({ logData }) => {
             { name: 'flyteload', color: keyType === 'W' ? '#3182ce' : '#38a169' },
             { name: 'hits', color: keyType === 'W' ? '#805ad5' : '#d53f8c' }
           ]}
-          tooltipFormatter={(value, name) => 
-            name === 'flyteload' ? formatFlyteload(value) : formatHits(value)
-          }
-          height={300}
+          tooltipFormatter={formatTooltip}
+          height={350}
           useMultipleYAxis={true}
         />
         
@@ -70,7 +76,8 @@ const GhostMonCharts = ({ logData }) => {
               { name: 'suspendflag', color: '#e53e3e' },
               { name: 'suspendlevel', color: '#ed8936' }
             ]}
-            height={250}
+            tooltipFormatter={formatTooltip}
+            height={350}
           />
         )}
       </div>
@@ -78,17 +85,17 @@ const GhostMonCharts = ({ logData }) => {
   };
 
   return (
-    <div>
+    <div className="mb-6">
       {/* Render charts for each key type if data is available */}
       {hasWData && (
-        <div>
+        <div className="mb-8">
           <h3 className="text-xl font-medium mb-4">Key Type: W ({typeWData.length} entries)</h3>
           {createChartSection(typeWData, 'W')}
         </div>
       )}
       
       {hasSData && (
-        <div>
+        <div className="mb-8">
           <h3 className="text-xl font-medium mb-4">Key Type: S ({typeSData.length} entries)</h3>
           {createChartSection(typeSData, 'S')}
         </div>
@@ -96,7 +103,7 @@ const GhostMonCharts = ({ logData }) => {
       
       {/* Combined charts if both types are present */}
       {hasWData && hasSData && (
-        <div>
+        <div className="mb-8">
           <h3 className="text-xl font-medium mb-4">Combined ({logData.length} entries)</h3>
           {createChartSection(logData)}
         </div>
