@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Overview from './Overview';
 import RobustStats from './RobustStats';
 import OverloadManager from './OverloadManager';
+import GhostMonAnalyzer from './GhostMonAnalyzer';
 import FileUpload from './FileUpload';
 import TabNavigation from './TabNavigation';
 import { parseLogData } from '../utils/logParser';
@@ -14,6 +15,7 @@ const SystemLogAnalyzer = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState({ start: null, end: null });
+  const [rawLogContent, setRawLogContent] = useState('');
   
   const handleFileUpload = (event) => {
     // If a file is provided via input, use that
@@ -22,10 +24,18 @@ const SystemLogAnalyzer = () => {
     // Otherwise, proceed with processing the file content
     const processFileContent = (content) => {
       try {
+        // Save the raw log content for GhostMon analyzer
+        setRawLogContent(content);
+        
         const { data, timeRange, error } = parseLogData(content);
         
+        // Always set the raw log content, even if main parsing fails
+        setRawLogContent(content);
+        
         if (error) {
-          setError(error);
+          // If main parsing fails, don't set an error - this allows GhostMon to still work
+          console.warn('Main log parsing error:', error);
+          setLogData(null);
         } else {
           setTimeRange(timeRange);
           setLogData(data);
@@ -78,7 +88,7 @@ const SystemLogAnalyzer = () => {
       }
     } else {
       // Auto-load the sample file for development/testing
-      fetch('/sample-log.txt')
+      fetch('/sample-ghostmon-both-keys.log')
         .then(response => response.text())
         .then(processFileContent)
         .catch(err => {
@@ -96,7 +106,8 @@ const SystemLogAnalyzer = () => {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'robustStats', label: 'Robust Stats' },
-    { id: 'overloadManager', label: 'OverloadManager' }
+    { id: 'overloadManager', label: 'OverloadManager' },
+    { id: 'ghostMon', label: 'GhostMon Analyzer' }
   ];
 
   // Main render function
@@ -119,16 +130,18 @@ const SystemLogAnalyzer = () => {
         </div>
       )}
       
-      {!loading && !error && logData && (
+      {!loading && !error && (
         <div>
-          <div className="text-xs text-gray-500 flex flex-wrap justify-between items-center">
-            <div>
-              {formatTimestamp(timeRange.start, true)} to {formatTimestamp(timeRange.end, true)}
+          {logData && (
+            <div className="text-xs text-gray-500 flex flex-wrap justify-between items-center">
+              <div>
+                {formatTimestamp(timeRange.start, true)} to {formatTimestamp(timeRange.end, true)}
+              </div>
+              <div>
+                {logData.robustStats.length} Robust stats, {logData.overloadManager.length} OverloadManager entries
+              </div>
             </div>
-            <div>
-              {logData.robustStats.length} Robust stats, {logData.overloadManager.length} OverloadManager entries
-            </div>
-          </div>
+          )}
           
           <TabNavigation 
             activeTab={activeTab} 
@@ -136,9 +149,24 @@ const SystemLogAnalyzer = () => {
             tabs={tabs} 
           />
           
-          {activeTab === 'overview' && <Overview logData={logData} />}
-          {activeTab === 'robustStats' && <RobustStats logData={logData} />}
-          {activeTab === 'overloadManager' && <OverloadManager logData={logData} />}
+          {activeTab === 'overview' && logData ? (
+            <Overview logData={logData} />
+          ) : (
+            activeTab === 'overview' && <div className="text-center py-6">No overview data available</div>
+          )}
+          
+          {activeTab === 'robustStats' && logData ? (
+            <RobustStats logData={logData} />
+          ) : (
+            activeTab === 'robustStats' && <div className="text-center py-6">No Robust stats data available</div>
+          )}
+          
+          {activeTab === 'overloadManager' && logData ? (
+            <OverloadManager logData={logData} />
+          ) : (
+            activeTab === 'overloadManager' && <div className="text-center py-6">No OverloadManager data available</div>
+          )}
+          {activeTab === 'ghostMon' && <GhostMonAnalyzer logFileContent={rawLogContent} isLoading={loading} />}
         </div>
       )}
     </div>

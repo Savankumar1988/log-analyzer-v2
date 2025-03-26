@@ -1,6 +1,17 @@
 import React from 'react';
 
-const StatCard = ({ title, value, color = 'blue', details }) => {
+const StatCard = ({ 
+  title, 
+  value, 
+  color = 'blue', 
+  details,
+  // Additional stats props
+  min,
+  max,
+  avg,
+  median,
+  className
+}) => {
   const colorMap = {
     blue: 'text-blue-600',
     green: 'text-green-600',
@@ -9,12 +20,49 @@ const StatCard = ({ title, value, color = 'blue', details }) => {
     red: 'text-red-600'
   };
   
-  const textColorClass = colorMap[color] || 'text-blue-600';
+  const textColorClass = className || (colorMap[color] || 'text-blue-600');
   
+  // If min/max/avg/median are provided, render a stats card
+  if (min !== undefined || max !== undefined || avg !== undefined || median !== undefined) {
+    return (
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h3 className="text-lg font-medium mb-2">{title}</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {min !== undefined && (
+            <div>
+              <div className="text-xs text-gray-500">Min</div>
+              <div className="text-sm font-medium">{min}</div>
+            </div>
+          )}
+          {max !== undefined && (
+            <div>
+              <div className="text-xs text-gray-500">Max</div>
+              <div className="text-sm font-medium">{max}</div>
+            </div>
+          )}
+          {avg !== undefined && (
+            <div>
+              <div className="text-xs text-gray-500">Avg</div>
+              <div className="text-sm font-medium">{avg}</div>
+            </div>
+          )}
+          {median !== undefined && (
+            <div>
+              <div className="text-xs text-gray-500">Median</div>
+              <div className="text-sm font-medium">{median}</div>
+            </div>
+          )}
+        </div>
+        {details && <div className="text-sm text-gray-500 mt-2">{details}</div>}
+      </div>
+    );
+  }
+  
+  // Otherwise, render a simple value card
   return (
-    <div className="bg-white p-4 rounded-lg shadow" style={{display: 'inline-block', width: '30%', margin: '0 1%'}}>
+    <div className="bg-white p-4 rounded-lg shadow">
       <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <div className={`text-3xl font-bold ${textColorClass}`}>{value}</div>
+      <div className={`text-xl font-bold ${textColorClass}`}>{value}</div>
       {details && <div className="text-sm text-gray-500">{details}</div>}
     </div>
   );
