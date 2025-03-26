@@ -157,10 +157,11 @@ export const parseLogData = (fileContent) => {
         } else if (line.includes("processMainLoop")) {
           data.type = "processMainLoop";
           
-          // Extract runQ
+          // Extract runQ and trigger reason
           const runQMatch = line.match(/runQ:(\d+\.\d+)/);
           if (runQMatch) {
             data.runQ = parseFloat(runQMatch[1]);
+            data.triggerReason = "Default"; // Set a default reason if none found
           }
         }
         
