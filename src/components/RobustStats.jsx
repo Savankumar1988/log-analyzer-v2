@@ -4,13 +4,13 @@ import { formatMemory, prepareTimeSeriesData } from '../utils/chartUtils';
 
 const RobustStats = ({ logData }) => {
   const [activeMetric, setActiveMetric] = useState('system');
-  
+
   if (!logData || !logData.robustStats.length) return <div>No data available</div>;
-  
+
   // Determine which metrics to show based on the active metric selection
   let metrics = [];
   let chartTitle = "";
-  
+
   switch (activeMetric) {
     case 'http':
       metrics = ['http', 'https'];
@@ -36,14 +36,14 @@ const RobustStats = ({ logData }) => {
       metrics = ['cpuAll', 'clientInProgress'];
       chartTitle = "System Load";
   }
-  
+
   const chartData = prepareTimeSeriesData(logData.robustStats, metrics);
-  
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Robust Stats Analysis</h2>
-        
+
         <div className="flex space-x-2">
           <button 
             className={`px-3 py-1 rounded text-sm ${activeMetric === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
@@ -83,7 +83,7 @@ const RobustStats = ({ logData }) => {
           </button>
         </div>
       </div>
-      
+
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h3 className="text-lg font-medium mb-3">{chartTitle}</h3>
         <ResponsiveContainer width="100%" height={350}>
@@ -111,7 +111,7 @@ const RobustStats = ({ logData }) => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
+
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-medium mb-3">Raw Data</h3>
         <div className="overflow-x-auto">
@@ -119,26 +119,30 @@ const RobustStats = ({ logData }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTP</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTPS</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU All</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flit</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Manager Cycle</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client In Progress</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Done</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fwd In Progress</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU All</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mem RSS</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTP</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTTPS</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {logData.robustStats.slice(0, 10).map((entry, index) => (
-                <tr key={index}>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.timestampFormatted}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.http}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.https}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.clientInProgress}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.done}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.fwdInProgress}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{entry.cpuAll}%</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{formatMemory(entry.memRSS)}</td>
+                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{entry.timestampFormatted}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.cpuAll}%</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.flit}%</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.avgManagerCycle}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.clientInProgress}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.done}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.fwdInProgress}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatMemory(entry.memRSS)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.http}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.https}</td>
                 </tr>
               ))}
             </tbody>
