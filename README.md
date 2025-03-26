@@ -1,71 +1,81 @@
-# Getting Started with Create React App
+# Log Analyzer with Hybrid Processing
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This application provides a system log analyzer with a hybrid processing approach for handling different file sizes:
 
-## Available Scripts
+- **Client-side processing** for smaller files (<200MB) - quick and efficient for most log files
+- **Server-side processing** for larger files (>200MB) - prevents browser memory issues
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- Automatic detection of file size and routing to appropriate processing method
+- Support for plain text (.log, .txt) and compressed (.gz) log files
+- Multiple analysis types: Robust Stats, OverloadManager, GhostMon
+- Interactive charts and statistics
+- Progress tracking for server-side processing
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Setup
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. Install dependencies:
+   ```
+   npm install
+   ```
 
-### `npm test`
+2. Create required directories (uploads and results):
+   ```
+   mkdir -p uploads/temp results
+   ```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+3. Start the development server with both backend and frontend:
+   ```
+   npm run dev
+   ```
 
-### `npm run build`
+   Or start them separately:
+   ```
+   npm run server   # Start the Express backend on port 3001
+   npm start        # Start the React frontend on port 3000
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## How It Works
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Small Files (<200MB)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+For files under 200MB, the application:
+1. Loads the file in the browser using FileReader API
+2. Processes the content entirely client-side
+3. Displays the results immediately in the UI
 
-### `npm run eject`
+### Large Files (>200MB)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+For files over 200MB, the application:
+1. Automatically detects the file size
+2. Uploads the file to the server
+3. Processes it in chunks to optimize memory usage
+4. Streams results back to the client
+5. Displays real-time progress in the UI
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Architecture
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The hybrid approach maintains the same user experience regardless of file size while handling the processing limitations of browsers:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **Frontend**: React application with components for both processing methods
+- **Backend**: Express server with file upload handling and optimized processing
 
-## Learn More
+### Key Components
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- `SystemLogAnalyzer`: Main component that determines processing method based on file size
+- `LargeFileProcessor`: Handles server communication for large files
+- `server.js`: Express backend for large file processing
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## API Endpoints
 
-### Code Splitting
+- `POST /api/upload-log`: Upload large log files
+- `GET /api/job-status/:jobId`: Check processing status
+- `GET /api/results/:jobId`: Retrieve processed results
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Customization
 
-### Analyzing the Bundle Size
+You can adjust the file size threshold in `SystemLogAnalyzer.jsx`:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# log-analyzer-v2
+```javascript
+const LARGE_FILE_THRESHOLD = 200 * 1024 * 1024; // 200MB

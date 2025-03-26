@@ -15,7 +15,33 @@ const GhostMonAnalyzer = ({ logFileContent, isLoading }) => {
     }
 
     try {
-      // Parse the ghostmon log data
+      // Check if this is server-processed JSON data
+      if (typeof logFileContent === 'string' && logFileContent.startsWith('[{') && logFileContent.endsWith('}]')) {
+        try {
+          // Try to parse as JSON (pre-processed data from server)
+          const parsedData = JSON.parse(logFileContent);
+          
+          if (Array.isArray(parsedData) && parsedData.length > 0 && 'timestamp' in parsedData[0]) {
+            // This is pre-processed data
+            setGhostMonData(parsedData);
+            
+            // Extract time range from the data
+            const timestamps = parsedData.map(entry => entry.timestamp);
+            setTimeRange({
+              start: Math.min(...timestamps),
+              end: Math.max(...timestamps)
+            });
+            
+            setError('');
+            return;
+          }
+        } catch (jsonErr) {
+          // Not valid JSON, continue with regular parsing
+          console.warn('Not valid JSON data, continuing with regular parsing');
+        }
+      }
+      
+      // Regular parsing of log file content
       const { data, timeRange, error } = parseGhostMonData(logFileContent);
       
       if (error) {
