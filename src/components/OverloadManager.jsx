@@ -82,7 +82,8 @@ const OverloadManager = ({ logData }) => {
                 }}
                 labelFormatter={(time, entry) => {
                   const dataPoint = processLoopData[entry[0].payload.index];
-                  return `Time: ${time}\nTriggered by: ${dataPoint.triggerReason}`;
+                  const triggerReason = dataPoint?.triggerReason || 'N/A';
+                  return `Time: ${time}\nTriggered by: ${triggerReason}`;
                 }}
               />
               <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="Run Queue" dot={false} />
