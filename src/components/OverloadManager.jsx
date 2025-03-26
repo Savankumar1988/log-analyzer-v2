@@ -2,23 +2,56 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
+const mergeLogEntries = (logData) => {
+  const merged = new Map();
+  
+  logData.forEach(entry => {
+    const key = entry.timestamp;
+    if (!merged.has(key)) {
+      merged.set(key, {
+        timestamp: entry.timestamp,
+        ruleName: entry.ruleName || '',
+        triggerType: entry.triggerType || '',
+        triggerPct: entry.triggerPct || 0,
+        denyPct: entry.denyPct || 0,
+        metrics: entry.metrics || { cpu: 0, mem: 0, reqs: 0 },
+        runQ: entry.runQ || 0
+      });
+    } else {
+      const existingEntry = merged.get(key);
+      merged.set(key, {
+        ...existingEntry,
+        ruleName: entry.ruleName || existingEntry.ruleName,
+        triggerType: entry.triggerType || existingEntry.triggerType,
+        triggerPct: entry.triggerPct || existingEntry.triggerPct,
+        denyPct: entry.denyPct || existingEntry.denyPct,
+        metrics: entry.metrics || existingEntry.metrics,
+        runQ: entry.runQ || existingEntry.runQ
+      });
+    }
+  });
+  
+  return Array.from(merged.values());
+};
+
 const OverloadManager = ({ logData }) => {
   if (!logData || !logData.overloadManager || logData.overloadManager.length === 0) {
     return <div>No OverloadManager data available</div>;
   }
 
-  const formatData = logData.overloadManager.map(entry => ({
+  const mergedData = mergeLogEntries(logData.overloadManager);
+  const formatData = mergedData.map(entry => ({
     timestamp: entry.timestamp.toFixed(3),
-    ruleName: entry.ruleName || '',
-    triggerType: entry.triggerType || '',
-    triggerValue: entry.triggerValue || 0,
-    triggerPct: entry.triggerPct || 0,
-    denyPct: entry.denyPct || 0,
+    ruleName: entry.ruleName,
+    triggerType: entry.triggerType,
+    triggerPct: entry.triggerPct,
+    denyPct: entry.denyPct,
     arlid: entry.metrics?.arlid || 0,
     ehnid: entry.metrics?.ehnid || 0,
     cpu: entry.metrics?.cpu || 0,
     mem: entry.metrics?.mem || 0,
-    reqs: entry.metrics?.reqs || 0
+    reqs: entry.metrics?.reqs || 0,
+    runQ: entry.runQ
   }));
 
   // Prepare time series data for plots
@@ -33,8 +66,59 @@ const OverloadManager = ({ logData }) => {
 
   return (
     <div>
-      <h2>OverloadManager Analysis</h2>
-      
+      <h2 className="text-xl font-semibold mb-4">OverloadManager Analysis</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-2">Latest Trigger %</h3>
+          <div className="text-3xl font-bold text-orange-600">
+            {formatData[formatData.length - 1]?.triggerPct.toFixed(1)}%
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-2">Latest Deny %</h3>
+          <div className="text-3xl font-bold text-red-600">
+            {formatData[formatData.length - 1]?.denyPct.toFixed(1)}%
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-2">Latest Run Queue</h3>
+          <div className="text-3xl font-bold text-blue-600">
+            {formatData[formatData.length - 1]?.runQ.toFixed(3)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Percentages Over Time</h3>
+        <LineChart width={800} height={300} data={formatData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="timestamp" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="triggerPct" name="Trigger %" stroke="#f97316" />
+          <Line type="monotone" dataKey="denyPct" name="Deny %" stroke="#dc2626" />
+        </LineChart>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Resource Usage</h3>
+        <LineChart width={800} height={300} data={formatData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="timestamp" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="cpu" name="CPU (ms)" stroke="#2563eb" />
+          <Line type="monotone" dataKey="mem" name="Memory (KB)" stroke="#7c3aed" />
+          <Line type="monotone" dataKey="reqs" name="Requests" stroke="#059669" />
+        </LineChart>
+      </div>
+
+      <h3 className="text-lg font-medium mb-3">Raw Data (Sample)</h3>
       <div style={{ overflowX: 'auto', marginBottom: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -52,7 +136,7 @@ const OverloadManager = ({ logData }) => {
             </tr>
           </thead>
           <tbody>
-            {formatData.map((entry, index) => (
+            {formatData.slice(-10).map((entry, index) => (
               <tr key={index}>
                 <td>{entry.timestamp}</td>
                 <td>{entry.ruleName}</td>
