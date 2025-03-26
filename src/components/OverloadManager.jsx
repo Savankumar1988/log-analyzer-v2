@@ -80,8 +80,18 @@ const OverloadManager = ({ logData }) => {
                   if (name === 'runQ') return [value.toFixed(3), 'Run Queue'];
                   return [value];
                 }}
-                labelFormatter={(time) => {
-                  return `Time: ${time}`;
+                labelFormatter={(time, entry) => {
+                  const dataPoint = entry[0]?.payload;
+                  if (!dataPoint) return `Time: ${time}`;
+                  
+                  let triggerInfo = '';
+                  if (dataPoint.triggerType === 'cpu') {
+                    triggerInfo = `CPU: ${dataPoint.triggerValue?.toFixed(3)}`;
+                  } else if (dataPoint.runQ) {
+                    triggerInfo = `RunQ: ${dataPoint.runQ?.toFixed(3)}`;
+                  }
+                  
+                  return `Time: ${time}\nRule: ${dataPoint.ruleName || 'N/A'}\n${triggerInfo}`;
                 }}
               />
               <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="Run Queue" dot={false} />

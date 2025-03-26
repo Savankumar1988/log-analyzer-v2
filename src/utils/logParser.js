@@ -159,14 +159,20 @@ export const parseLogData = (fileContent) => {
         } else if (line.includes("processMainLoop")) {
           data.type = "processMainLoop";
 
-          // Extract runQ and trigger reason
-          const triggerMatch = line.match(/triggered by ([^:]+):(\d+\.\d+)/);
-          if (triggerMatch) {
-            const [_, trigger, value] = triggerMatch;
-            data.triggerMetric = trigger;
-            data.triggerValue = parseFloat(value);
+          // Extract CPU trigger
+          const cpuMatch = line.match(/triggered by cpu:(\d+\.\d+)/);
+          if (cpuMatch) {
+            data.triggerType = 'cpu';
+            data.triggerValue = parseFloat(cpuMatch[1]);
           }
 
+          // Extract runQ trigger
+          const runQMatch = line.match(/runQ:(\d+\.\d+)/);
+          if (runQMatch) {
+            data.runQ = parseFloat(runQMatch[1]);
+          }
+
+          // Extract rule information
           const ruleMatch = line.match(/rule:'([^']+)'/);
           if (ruleMatch) {
             data.ruleName = ruleMatch[1];
