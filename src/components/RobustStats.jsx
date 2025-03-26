@@ -89,7 +89,13 @@ const RobustStats = ({ logData }) => {
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+            <XAxis 
+  dataKey="formattedTime" 
+  tick={{ fontSize: 12 }} 
+  angle={-45} 
+  textAnchor="end" 
+  height={60} 
+/>
             <YAxis />
             <Tooltip />
             <Legend />

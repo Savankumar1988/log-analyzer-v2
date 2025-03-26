@@ -9,7 +9,7 @@ const SystemLogAnalyzer = () => {
   const [activeMetric, setActiveMetric] = useState('system');
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState({ start: null, end: null });
-  
+
   // Format timestamp for display
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp * 1000); // Convert epoch seconds to milliseconds
@@ -22,25 +22,25 @@ const SystemLogAnalyzer = () => {
 
     setLoading(true);
     setError('');
-    
+
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const fileContent = e.target.result;
         const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-        
+
         // Parse Robust stats logs
         const robustStats = [];
         // Parse OverloadManager entries
         const overloadManager = [];
-        
+
         // Your existing parsing logic here - copy it from the useEffect
         lines.forEach(line => {
           if (line.includes("Robust - stats")) {
             const parts = line.split('|');
             const timestamp = parseFloat(parts[0]);
-            
+
             const data = {
               timestamp,
               timestampFormatted: formatTimestamp(timestamp),
@@ -60,95 +60,95 @@ const SystemLogAnalyzer = () => {
               cpuAll: 0,
               avgManagerCycle: 0
             };
-            
+
             // Extract HTTP/HTTPS
             const httpMatch = line.match(/Accepts: http\/https (\d+)\/(\d+)/);
             if (httpMatch) {
               data.http = parseInt(httpMatch[1]);
               data.https = parseInt(httpMatch[2]);
             }
-            
+
             // Extract client in-progress
             const clientMatch = line.match(/client: in-progress (\d+)/);
             if (clientMatch) {
               data.clientInProgress = parseInt(clientMatch[1]);
             }
-            
+
             // Extract done
             const doneMatch = line.match(/done (\d+),/);
             if (doneMatch) {
               data.done = parseInt(doneMatch[1]);
             }
-            
+
             // Extract fwd in-progress
             const fwdMatch = line.match(/fwd: in progress (\d+)/);
             if (fwdMatch) {
               data.fwdInProgress = parseInt(fwdMatch[1]);
             }
-            
+
             // Extract flit
             const flitMatch = line.match(/flit (\d+)%/);
             if (flitMatch) {
               data.flit = parseInt(flitMatch[1]);
             }
-            
+
             // Extract FreeFds
             const freeFdsMatch = line.match(/FreeFds: (\d+)/);
             if (freeFdsMatch) {
               data.freeFds = parseInt(freeFdsMatch[1]);
             }
-            
+
             // Extract websockets in-progress
             const websocketsMatch = line.match(/websockets: in-progress (\d+)/);
             if (websocketsMatch) {
               data.websocketsInProgress = parseInt(websocketsMatch[1]);
             }
-            
+
             // Extract memory values
             const memRSSMatch = line.match(/Mem RSS (\d+) KB/);
             if (memRSSMatch) {
               data.memRSS = parseInt(memRSSMatch[1]);
             }
-            
+
             const appUsedMatch = line.match(/app used (\d+) KB/);
             if (appUsedMatch) {
               data.appUsed = parseInt(appUsedMatch[1]);
             }
-            
+
             const totalMemMatch = line.match(/totalMem (\d+) KB/);
             if (totalMemMatch) {
               data.totalMem = parseInt(totalMemMatch[1]);
             }
-            
+
             // Extract TCP Mem
             const tcpMemMatch = line.match(/TCP Mem (\d+) KB/);
             if (tcpMemMatch) {
               data.tcpMem = parseInt(tcpMemMatch[1]);
             }
-            
+
             // Extract pressure
             const pressureMatch = line.match(/in pressure: ([YN])/);
             if (pressureMatch) {
               data.inPressure = pressureMatch[1];
             }
-            
+
             // Extract CPU all
             const cpuAllMatch = line.match(/CPU: all (\d+)%/);
             if (cpuAllMatch) {
               data.cpuAll = parseInt(cpuAllMatch[1]);
             }
-            
+
             // Extract AVG manager cycle
             const avgManagerMatch = line.match(/AVG manager cycle (\d+)us/);
             if (avgManagerMatch) {
               data.avgManagerCycle = parseInt(avgManagerMatch[1]);
             }
-            
+
             robustStats.push(data);
           } else if (line.includes("crp::OverloadManager")) {
             const parts = line.split('|');
             const timestamp = parseFloat(parts[0]);
-            
+
             const data = {
               timestamp,
               timestampFormatted: formatTimestamp(timestamp),
@@ -162,18 +162,18 @@ const SystemLogAnalyzer = () => {
               },
               runQ: 0
             };
-            
+
             // Determine the type of OverloadManager entry
             if (line.includes("addCandidateTarget")) {
               data.type = "addCandidateTarget";
-              
+
               // Extract trigger and deny percentages
               const pctMatch = line.match(/trigger_pct:(\d+\.\d+)% deny_pct:(\d+\.\d+)%/);
               if (pctMatch) {
                 data.triggerPct = parseFloat(pctMatch[1]);
                 data.denyPct = parseFloat(pctMatch[2]);
               }
-              
+
               // Extract metrics
               const metricsMatch = line.match(/metrics \(cpu:(\d+)ms mem:(\d+)KB reqs:(\d+)\)/);
               if (metricsMatch) {
@@ -183,18 +183,18 @@ const SystemLogAnalyzer = () => {
               }
             } else if (line.includes("processMainLoop")) {
               data.type = "processMainLoop";
-              
+
               // Extract runQ
               const runQMatch = line.match(/runQ:(\d+\.\d+)/);
               if (runQMatch) {
                 data.runQ = parseFloat(runQMatch[1]);
               }
             }
-            
+
             overloadManager.push(data);
           }
         });
-        
+
         // Set the data
         if (robustStats.length > 0 && overloadManager.length > 0) {
           const data = {
@@ -203,17 +203,17 @@ const SystemLogAnalyzer = () => {
             addCandidateTargets: overloadManager.filter(entry => entry.type === "addCandidateTarget"),
             processMainLoops: overloadManager.filter(entry => entry.type === "processMainLoop")
           };
-          
+
           const startTime = Math.min(
             robustStats[0].timestamp,
             overloadManager[0].timestamp
           );
-          
+
           const endTime = Math.max(
             robustStats[robustStats.length - 1].timestamp,
             overloadManager[overloadManager.length - 1].timestamp
           );
-          
+
           setTimeRange({ start: startTime, end: endTime });
           setLogData(data);
         } else {
@@ -225,20 +225,20 @@ const SystemLogAnalyzer = () => {
         setLoading(false);
       }
     };
-    
+
     reader.onerror = () => {
       setError('Failed to read file');
       setLoading(false);
     };
-    
+
     reader.readAsText(file);
   };
-  
+
   // Format numbers for display
   const formatNumber = (num) => {
     return num ? num.toLocaleString() : '0';
   };
-  
+
   // Format memory values
   const formatMemory = (kb) => {
     if (!kb) return '0 KB';
@@ -246,17 +246,17 @@ const SystemLogAnalyzer = () => {
     if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(2)} MB`;
     return `${(kb / 1024 / 1024).toFixed(2)} GB`;
   };
-  
+
   // Convert time series data for charts
   const prepareTimeSeriesData = (data, metrics) => {
     if (!data) return [];
-    
+
     return data.map(entry => {
       const result = { 
         timestamp: entry.timestamp,
         formattedTime: formatTimestamp(entry.timestamp)
       };
-      
+
       metrics.forEach(metric => {
         if (typeof metric === 'string') {
           result[metric] = entry[metric];
@@ -270,15 +270,15 @@ const SystemLogAnalyzer = () => {
           result[metric.name] = value;
         }
       });
-      
+
       return result;
     });
   };
-  
+
   // Get statistics for a particular metric
   const getMetricStats = (data, metricPath) => {
     if (!data || !data.length) return { min: 0, max: 0, avg: 0, median: 0 };
-    
+
     // Extract values
     const values = data.map(entry => {
       if (typeof metricPath === 'string') {
@@ -293,7 +293,7 @@ const SystemLogAnalyzer = () => {
       }
       return 0;
     });
-    
+
     // Calculate statistics
     values.sort((a, b) => a - b);
     const min = values[0];
@@ -303,29 +303,29 @@ const SystemLogAnalyzer = () => {
     const median = values.length % 2 === 0
       ? (values[values.length / 2] + values[(values.length / 2) - 1]) / 2
       : values[Math.floor(values.length / 2)];
-    
+
     return { min, max, avg, median };
   };
-  
+
   // Render system overview dashboard
   const renderSystemOverview = () => {
     if (!logData || !logData.robustStats.length) return <div>No data available</div>;
-    
+
     const lastStats = logData.robustStats[logData.robustStats.length - 1];
     const cpuStats = getMetricStats(logData.robustStats, 'cpuAll');
     const memStats = getMetricStats(logData.robustStats, 'memRSS');
     const httpStats = getMetricStats(logData.robustStats, 'https');
-    
+
     // Prepare time series data for CPU, Memory, and HTTP requests
     const cpuData = prepareTimeSeriesData(logData.robustStats, ['cpuAll']);
     const memData = prepareTimeSeriesData(logData.robustStats, ['memRSS']);
     const httpData = prepareTimeSeriesData(logData.robustStats, ['http', 'https']);
     const clientData = prepareTimeSeriesData(logData.robustStats, ['clientInProgress', 'done']);
-    
+
     return (
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">System Overview</h2>
-        
+
         {/* Horizontal grid for system metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
@@ -335,7 +335,7 @@ const SystemLogAnalyzer = () => {
               Avg: {cpuStats.avg.toFixed(1)}% | Min: {cpuStats.min}% | Max: {cpuStats.max}%
             </div>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">Memory (RSS)</h3>
             <div className="text-3xl font-bold text-green-600">{formatMemory(lastStats.memRSS)}</div>
@@ -343,7 +343,7 @@ const SystemLogAnalyzer = () => {
               Avg: {formatMemory(memStats.avg)} | Max: {formatMemory(memStats.max)}
             </div>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">HTTPS Requests</h3>
             <div className="text-3xl font-bold text-purple-600">{formatNumber(lastStats.https)}</div>
@@ -352,27 +352,27 @@ const SystemLogAnalyzer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">CPU Utilization Over Time</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={cpuData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
                 <YAxis domain={[0, Math.max(100, cpuStats.max)]} />
                 <Tooltip formatter={(value) => [`${value}%`, 'CPU']} labelFormatter={(time) => `Time: ${time}`} />
                 <Line type="monotone" dataKey="cpuAll" stroke="#3182ce" name="CPU %" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">Memory Usage Over Time</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={memData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
                 <YAxis domain={['dataMin', 'dataMax']} tickFormatter={(value) => `${(value / 1024 / 1024).toFixed(1)} GB`} />
                 <Tooltip formatter={(value) => [formatMemory(value), 'Memory RSS']} labelFormatter={(time) => `Time: ${time}`} />
                 <Line type="monotone" dataKey="memRSS" stroke="#38a169" name="Memory RSS" dot={false} />
@@ -380,14 +380,14 @@ const SystemLogAnalyzer = () => {
             </ResponsiveContainer>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">HTTP/HTTPS Requests</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={httpData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -396,13 +396,13 @@ const SystemLogAnalyzer = () => {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">Client Requests</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={clientData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -419,11 +419,11 @@ const SystemLogAnalyzer = () => {
   // Render Robust Stats details
   const renderRobustStats = () => {
     if (!logData || !logData.robustStats.length) return <div>No data available</div>;
-    
+
     // Determine which metrics to show based on the active metric selection
     let metrics = [];
     let chartTitle = "";
-    
+
     switch (activeMetric) {
       case 'http':
         metrics = ['http', 'https'];
@@ -449,14 +449,14 @@ const SystemLogAnalyzer = () => {
         metrics = ['cpuAll', 'clientInProgress'];
         chartTitle = "System Load";
     }
-    
+
     const chartData = prepareTimeSeriesData(logData.robustStats, metrics);
-    
+
     return (
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Robust Stats Analysis</h2>
-          
+
           <div className="flex space-x-2">
             <button 
               className={`px-3 py-1 rounded text-sm ${activeMetric === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
@@ -496,13 +496,13 @@ const SystemLogAnalyzer = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <h3 className="text-lg font-medium mb-3">{chartTitle}</h3>
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
               <YAxis />
               <Tooltip />
               <Legend />
@@ -518,7 +518,7 @@ const SystemLogAnalyzer = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-medium mb-3">Raw Data</h3>
           <div className="overflow-x-auto">
@@ -562,7 +562,7 @@ const SystemLogAnalyzer = () => {
   // Render OverloadManager analysis
   const renderOverloadManager = () => {
     if (!logData || !logData.addCandidateTargets.length) return <div>No data available</div>;
-    
+
     const targetData = prepareTimeSeriesData(logData.addCandidateTargets, ['triggerPct', 'denyPct']);
     const metricsData = prepareTimeSeriesData(
       logData.addCandidateTargets, 
@@ -573,7 +573,7 @@ const SystemLogAnalyzer = () => {
       ]
     );
     const runQData = prepareTimeSeriesData(logData.processMainLoops, ['runQ']);
-    
+
     // Calculate statistics
     const triggerStats = getMetricStats(logData.addCandidateTargets, 'triggerPct');
     const denyStats = getMetricStats(logData.addCandidateTargets, 'denyPct');
@@ -581,11 +581,11 @@ const SystemLogAnalyzer = () => {
     const memStats = getMetricStats(logData.addCandidateTargets, { path: 'metrics.mem' });
     const reqsStats = getMetricStats(logData.addCandidateTargets, { path: 'metrics.reqs' });
     const runQStats = getMetricStats(logData.processMainLoops, 'runQ');
-    
+
     return (
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">OverloadManager Analysis</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">Trigger Percentage</h3>
@@ -594,7 +594,7 @@ const SystemLogAnalyzer = () => {
               Avg: {triggerStats.avg.toFixed(1)}% | Max: {triggerStats.max.toFixed(1)}%
             </div>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">Deny Percentage</h3>
             <div className="text-3xl font-bold text-red-600">{logData.addCandidateTargets[logData.addCandidateTargets.length - 1].denyPct.toFixed(1)}%</div>
@@ -602,7 +602,7 @@ const SystemLogAnalyzer = () => {
               Avg: {denyStats.avg.toFixed(1)}% | Max: {denyStats.max.toFixed(1)}%
             </div>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-2">Run Queue</h3>
             <div className="text-3xl font-bold text-blue-600">{logData.processMainLoops[logData.processMainLoops.length - 1].runQ.toFixed(3)}</div>
@@ -611,14 +611,14 @@ const SystemLogAnalyzer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">Trigger & Deny Percentages</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={targetData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
                 <YAxis domain={[0, Math.max(100, denyStats.max * 1.1)]} />
                 <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
                 <Legend />
@@ -627,8 +627,70 @@ const SystemLogAnalyzer = () => {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          
+
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-medium mb-3">Run Queue Over Time</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart
+
+                data={runQData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                <YAxis />
+                <Tooltip formatter={(value) => [`${value.toFixed(3)}`]} />
+                <Line type="monotone" dataKey="runQ" stroke="#3182ce" name="RunQ" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return renderSystemOverview();
+      case 'robustStats':
+        return renderRobustStats();
+      case 'overloadManager':
+        return renderOverloadManager();
+      default:
+        return <div>No data available</div>;
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">System Log Analyzer</h1>
+        <input type="file" onChange={handleFileUpload} className="border border-gray-300 px-3 py-2 rounded" />
+        {loading && <div className="text-gray-500">Loading...</div>}
+        {error && <div className="text-red-500">{error}</div>}
+      </div>
+      <div className="flex mb-4">
+        <button 
+          className={`px-4 py-2 rounded text-lg ${activeTab === 'overview' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+        </button>
+        <button 
+          className={`px-4 py-2 rounded text-lg ${activeTab === 'robustStats' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          onClick={() => setActiveTab('robustStats')}
+        >
+          Robust Stats
+        </button>
+        <button 
+          className={`px-4 py-2 rounded text-lg ${activeTab === 'overloadManager' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          onClick={() => setActiveTab('overloadManager')}
+        >
+          Overload Manager
+        </button>
+      </div>
+      {renderContent()}
+    </div>
+  );
+};
+
+export default SystemLogAnalyzer;
