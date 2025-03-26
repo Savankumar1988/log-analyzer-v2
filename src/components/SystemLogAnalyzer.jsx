@@ -14,16 +14,16 @@ const SystemLogAnalyzer = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState({ start: null, end: null });
-  
+
   const handleFileUpload = (event) => {
     // If a file is provided via input, use that
     const file = event?.target?.files?.[0];
-    
+
     // Otherwise, proceed with processing the file content
     const processFileContent = (content) => {
       try {
         const { data, timeRange, error } = parseLogData(content);
-        
+
         if (error) {
           setError(error);
         } else {
@@ -36,19 +36,19 @@ const SystemLogAnalyzer = () => {
         setLoading(false);
       }
     };
-    
+
     setLoading(true);
     setError('');
-    
+
     if (file) {
       // Process the selected file
       const reader = new FileReader();
       const isGzipped = file.name.toLowerCase().endsWith('.gz');
-      
+
       reader.onload = (e) => {
         try {
           let content;
-          
+
           if (isGzipped) {
             // For .gz files, decompress the content
             const compressed = new Uint8Array(e.target.result);
@@ -58,19 +58,19 @@ const SystemLogAnalyzer = () => {
             // For .log and .txt files, use the text directly
             content = e.target.result;
           }
-          
+
           processFileContent(content);
         } catch (err) {
           setError('Error processing file: ' + (err.message || 'Unknown error'));
           setLoading(false);
         }
       };
-      
+
       reader.onerror = () => {
         setError('Failed to read file');
         setLoading(false);
       };
-      
+
       if (isGzipped) {
         reader.readAsArrayBuffer(file);
       } else {
@@ -87,7 +87,7 @@ const SystemLogAnalyzer = () => {
         });
     }
   };
-  
+
   // Auto-load the sample file on initial mount
   React.useEffect(() => {
     handleFileUpload();
@@ -103,22 +103,22 @@ const SystemLogAnalyzer = () => {
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-4 text-center">System Log Analyzer</h1>
-      
+
       <FileUpload onFileUpload={handleFileUpload} />
-      
+
       {loading && (
         <div className="text-center py-12">
           <div className="text-lg">Loading and analyzing log data...</div>
           <div className="mt-2 text-gray-500">This may take a moment</div>
         </div>
       )}
-      
+
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {!loading && !error && logData && (
         <div>
           <div className="text-xs text-gray-500 flex flex-wrap justify-between items-center">
@@ -129,13 +129,13 @@ const SystemLogAnalyzer = () => {
               {logData.robustStats.length} Robust stats, {logData.overloadManager.length} OverloadManager entries
             </div>
           </div>
-          
+
           <TabNavigation 
             activeTab={activeTab} 
             onTabChange={setActiveTab} 
             tabs={tabs} 
           />
-          
+
           {activeTab === 'overview' && <Overview logData={logData} />}
           {activeTab === 'robustStats' && <RobustStats logData={logData} />}
           {activeTab === 'overloadManager' && <OverloadManager logData={logData} />}
