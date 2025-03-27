@@ -32,7 +32,7 @@ const LargeFileProcessor = forwardRef(({ onFileProcessed, onError }, ref) => {
         // After upload completes, simulate processing progress
         simulateProcessing(isTestFile);
       }
-    }, 150);
+    }, 50); // Speed up simulation for testing
   };
   
   // Simulate the processing steps
@@ -119,8 +119,41 @@ const LargeFileProcessor = forwardRef(({ onFileProcessed, onError }, ref) => {
         };
         
         // Add derived collections
-        mockResults.data.addCandidateTargets = mockResults.data.overloadManager.filter(entry => entry.type === "addCandidateTarget");
-        mockResults.data.processMainLoops = mockResults.data.overloadManager.filter(entry => entry.type === "processMainLoop");
+        // Create better mock data to show our UI changes
+        mockResults.data.addCandidateTargets = [
+          ...mockResults.data.overloadManager.filter(entry => entry.type === "addCandidateTarget"),
+          // Add more mock entries for better testing
+          ...Array(5).fill(0).map((_, i) => ({ 
+            id: i + 10, 
+            timestamp: now - Math.floor(Math.random() * 3600),
+            timestampFormatted: formatTimestamp ? formatTimestamp(now - Math.floor(Math.random() * 3600)) : '',
+            type: "addCandidateTarget",
+            triggerPct: Math.random() * 50 + 30,
+            denyPct: Math.random() * 30,
+            rule: `rule_cpu_${i}`,
+            metrics: {
+              cpu: Math.floor(Math.random() * 100),
+              mem: Math.floor(Math.random() * 50000) + 10000,
+              reqs: Math.floor(Math.random() * 100)
+            },
+            arlid: Math.floor(Math.random() * 1000),
+            ehnid: Math.floor(Math.random() * 500)
+          }))
+        ];
+        
+        mockResults.data.processMainLoops = [
+          ...mockResults.data.overloadManager.filter(entry => entry.type === "processMainLoop"),
+          // Add more mock entries for better testing
+          ...Array(5).fill(0).map((_, i) => ({ 
+            id: i + 20, 
+            timestamp: now - Math.floor(Math.random() * 3600),
+            timestampFormatted: formatTimestamp ? formatTimestamp(now - Math.floor(Math.random() * 3600)) : '',
+            type: "processMainLoop",
+            runQ: Math.random() * 5,
+            triggerReason: 'cpu',
+            triggerValue: Math.random() * 100
+          }))
+        ];
         
         if (onFileProcessed) {
           setTimeout(() => {
@@ -128,7 +161,7 @@ const LargeFileProcessor = forwardRef(({ onFileProcessed, onError }, ref) => {
           }, 500);
         }
       }
-    }, 200);
+    }, 50); // Speed up simulation for testing
   };
   
   // Upload file to server (real implementation)

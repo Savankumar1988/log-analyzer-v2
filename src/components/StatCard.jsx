@@ -25,7 +25,7 @@ const StatCard = ({
   // If min/max/avg/median are provided, render a stats card
   if (min !== undefined || max !== undefined || avg !== undefined || median !== undefined) {
     return (
-      <div className="bg-white p-4 rounded-lg shadow flex-1 mx-2 mb-2">
+      <div className="bg-white p-4 rounded-lg shadow flex-1 mb-2">
         <h3 className="text-lg font-medium mb-2 text-center">{title}</h3>
         <div className="grid grid-cols-4 gap-2">
           {min !== undefined && (
@@ -60,7 +60,7 @@ const StatCard = ({
   
   // Otherwise, render a simple value card
   return (
-    <div className="bg-white p-4 rounded-lg shadow flex-1 mx-2 mb-2">
+    <div className="bg-white p-4 rounded-lg shadow flex-1 mb-2">
       <h3 className="text-lg font-medium mb-2 text-center">{title}</h3>
       <div className={`text-xl font-bold ${textColorClass} text-center`}>{value}</div>
       {details && <div className="text-sm text-gray-500 text-center">{details}</div>}

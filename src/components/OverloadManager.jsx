@@ -75,35 +75,38 @@ const OverloadManager = ({ logData }) => {
     <div className="mb-6">
       <h2 className="text-xl font-semibold mb-4">OverloadManager Analysis</h2>
 
-      {/* Summary stats cards - now in horizontal layout */}
-      <div className="flex flex-wrap justify-between mb-6">
-        <StatCard
-          title="Trigger Percentage"
-          value={`${logData.addCandidateTargets[logData.addCandidateTargets.length - 1].triggerPct.toFixed(1)}%`}
-          color="orange"
-          details={`Avg: ${triggerStats.avg.toFixed(1)}% | Max: ${triggerStats.max.toFixed(1)}%`}
-        />
+      {/* Three sections side by side: Summary Statistics, Rule Distribution, Trigger Reason Distribution */}
+      <div className="flex flex-col md:flex-row mb-6">
+        {/* Section 1: Summary Statistics */}
+        <div className="w-full md:w-1/3 px-2 mb-4 md:mb-0">
+          <h3 className="text-xl font-semibold mb-3 text-center">Summary Statistics</h3>
+          <div className="bg-white p-4 rounded-lg shadow-md border border-gray-300">
+            <StatCard
+              title="Trigger Percentage"
+              value={`${logData.addCandidateTargets[logData.addCandidateTargets.length - 1].triggerPct.toFixed(1)}%`}
+              color="orange"
+              details={`Avg: ${triggerStats.avg.toFixed(1)}% | Max: ${triggerStats.max.toFixed(1)}%`}
+            />
 
-        <StatCard
-          title="Deny Percentage"
-          value={`${logData.addCandidateTargets[logData.addCandidateTargets.length - 1].denyPct.toFixed(1)}%`}
-          color="red"
-          details={`Avg: ${denyStats.avg.toFixed(1)}% | Max: ${denyStats.max.toFixed(1)}%`}
-        />
+            <StatCard
+              title="Deny Percentage"
+              value={`${logData.addCandidateTargets[logData.addCandidateTargets.length - 1].denyPct.toFixed(1)}%`}
+              color="red"
+              details={`Avg: ${denyStats.avg.toFixed(1)}% | Max: ${denyStats.max.toFixed(1)}%`}
+            />
 
-        <StatCard
-          title="Run Queue"
-          value={`${logData.processMainLoops[logData.processMainLoops.length - 1].runQ.toFixed(3)}`}
-          color="blue"
-          details={`Avg: ${runQStats.avg.toFixed(3)} | Max: ${runQStats.max.toFixed(3)}`}
-        />
-      </div>
-
-      {/* Distribution Tables Section - Now placed above charts with proper borders */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div>
-          <h3 className="text-xl font-semibold mb-3">Rule Distribution Table</h3>
-          <div className="border rounded-lg overflow-hidden">
+            <StatCard
+              title="Run Queue"
+              value={`${logData.processMainLoops[logData.processMainLoops.length - 1].runQ.toFixed(3)}`}
+              color="blue"
+              details={`Avg: ${runQStats.avg.toFixed(3)} | Max: ${runQStats.max.toFixed(3)}`}
+            />
+          </div>
+        </div>
+        {/* Section 2: Rule Distribution */}
+        <div className="w-full md:w-1/3 px-2 mb-4 md:mb-0">
+          <h3 className="text-xl font-semibold mb-3 text-center">Rule Distribution</h3>
+          <div className="bg-white p-4 rounded-lg overflow-hidden shadow-md border border-gray-300">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -125,9 +128,10 @@ const OverloadManager = ({ logData }) => {
           </div>
         </div>
         
-        <div>
-          <h3 className="text-xl font-semibold mb-3">Trigger Reason Distribution Table</h3>
-          <div className="border rounded-lg overflow-hidden">
+        {/* Section 3: Trigger Reason Distribution */}
+        <div className="w-full md:w-1/3 px-2">
+          <h3 className="text-xl font-semibold mb-3 text-center">Trigger Reason Distribution</h3>
+          <div className="bg-white p-4 rounded-lg overflow-hidden shadow-md border border-gray-300">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

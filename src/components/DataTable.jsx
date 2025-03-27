@@ -14,13 +14,13 @@ const DataTable = ({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 border">
           <thead className="bg-gray-50">
             <tr>
               {columns.map((column, idx) => (
                 <th 
                   key={idx}
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b ${idx > 0 ? 'border-l' : ''}`}
                 >
                   {column.header}
                 </th>
@@ -33,7 +33,7 @@ const DataTable = ({
                 {columns.map((column, colIdx) => (
                   <td 
                     key={`${rowIdx}-${colIdx}`} 
-                    className="px-3 py-2 whitespace-nowrap text-xs"
+                    className={`px-3 py-2 whitespace-nowrap text-xs ${colIdx > 0 ? 'border-l' : ''}`}
                   >
                     {column.render ? column.render(row) : row[column.accessor]}
                   </td>
