@@ -155,23 +155,37 @@ const OverloadManager = ({ logData }) => {
       </div>
 
       {/* Charts section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">Trigger & Deny Percentages</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={targetData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis domain={[0, Math.max(100, denyStats.max * 1.1)]} />
-              <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
-              <Legend />
-              <Line type="monotone" dataKey="triggerPct" stroke="#ed8936" name="Trigger %" dot={false} />
-              <Line type="monotone" dataKey="denyPct" stroke="#e53e3e" name="Deny %" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Trigger Percentage Chart */}
+<div className="bg-white p-4 rounded-lg shadow">
+  <h3 className="text-lg font-medium mb-3">Trigger Percentage</h3>
+  <ResponsiveContainer width="100%" height={250}>
+    <LineChart data={targetData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
+      <YAxis domain={[0, Math.max(100, triggerStats.max * 1.1)]} />
+      <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
+      <Legend />
+      <Line type="monotone" dataKey="triggerPct" stroke="#ed8936" name="Trigger %" dot={false} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
 
-        <div className="bg-white p-4 rounded-lg shadow">
+{/* Deny Percentage Chart */}
+<div className="bg-white p-4 rounded-lg shadow">
+  <h3 className="text-lg font-medium mb-3">Deny Percentage</h3>
+  <ResponsiveContainer width="100%" height={250}>
+    <LineChart data={targetData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
+      <YAxis domain={[0, Math.max(100, denyStats.max * 1.1)]} />
+      <Tooltip formatter={(value) => [`${value.toFixed(1)}%`]} />
+      <Legend />
+      <Line type="monotone" dataKey="denyPct" stroke="#e53e3e" name="Deny %" dot={false} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
+
+<div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-medium mb-3">Resource Metrics</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={metricsData}>
@@ -187,8 +201,6 @@ const OverloadManager = ({ logData }) => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
       {/* Raw data table */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h3 className="text-lg font-medium mb-3">OverloadManager Raw Data</h3>
