@@ -37,7 +37,7 @@ const GhostMonAnalyzer = ({ logFileContent, isLoading }) => {
           }
         } catch (jsonErr) {
           // Not valid JSON, continue with regular parsing
-          console.warn('Not valid JSON data, continuing with regular parsing');
+          console.warn('Not valid JSON data, continuing with regular parsing:', jsonErr.message);
         }
       }
       
@@ -88,6 +88,11 @@ const GhostMonAnalyzer = ({ logFileContent, isLoading }) => {
 
   return (
     <div className="space-y-6">
+      {/* Hidden element to store the parsed data for the report generator */}
+      <div id="ghostmon-analyzer-data" style={{ display: 'none' }}>
+        {JSON.stringify(ghostMonData)}
+      </div>
+      
       <div className="text-xs text-gray-500 flex flex-wrap justify-between items-center">
         <div>
           {formatTimestamp(timeRange.start, true)} to {formatTimestamp(timeRange.end, true)}

@@ -6,6 +6,7 @@ import GhostMonAnalyzer from './GhostMonAnalyzer';
 import FileUpload from './FileUpload';
 import LargeFileProcessor from './LargeFileProcessor';
 import TabNavigation from './TabNavigation';
+import ReportGenerator from './ReportGenerator';
 import { parseLogData } from '../utils/logParser';
 import { formatTimestamp } from '../utils/chartUtils';
 import pako from 'pako';
@@ -267,6 +268,22 @@ const SystemLogAnalyzer = () => {
             activeTab === 'overloadManager' && <div className="text-center py-6">No OverloadManager data available</div>
           )}
           {activeTab === 'ghostMon' && <GhostMonAnalyzer logFileContent={rawLogContent} isLoading={loading && !isLargeFile} />}
+          
+          {/* Report Generator */}
+          {!loading && (
+            <ReportGenerator 
+              logData={activeTab === 'ghostMon' 
+                ? (rawLogContent && rawLogContent.startsWith('[{') 
+                  ? JSON.parse(rawLogContent) 
+                  : (activeTab === 'ghostMon' && document.getElementById('ghostmon-analyzer-data') 
+                    ? JSON.parse(document.getElementById('ghostmon-analyzer-data').textContent || '[]') 
+                    : null))
+                : logData}
+              timeRange={timeRange}
+              activeTab={activeTab}
+              disabled={loading || (activeTab !== 'ghostMon' && !logData) || (activeTab === 'ghostMon' && !rawLogContent)}
+            />
+          )}
         </div>
       )}
     </div>
