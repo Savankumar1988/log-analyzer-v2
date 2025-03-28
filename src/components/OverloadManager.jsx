@@ -185,23 +185,52 @@ const OverloadManager = ({ logData }) => {
   </ResponsiveContainer>
 </div>
 
-<div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">Resource Metrics</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={metricsData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
-              <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="cpuMs" stroke="#3182ce" name="CPU (ms)" dot={false} />
-              <Line yAxisId="left" type="monotone" dataKey="memKB" stroke="#38a169" name="Memory (KB)" dot={false} />
-              <Line yAxisId="right" type="monotone" dataKey="reqs" stroke="#805ad5" name="Requests" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      {/* Raw data table */}
+  {/* CPU Metrics Chart */}
+<div className="bg-white p-4 rounded-lg shadow mt-4">
+  <h3 className="text-lg font-medium mb-3">CPU Usage (ms)</h3>
+  <ResponsiveContainer width="100%" height={250}>
+    <LineChart data={metricsData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
+      <YAxis domain={[0, cpuStats.max * 1.1]} />
+      <Tooltip formatter={(value) => [`${value} ms`]} />
+      <Legend />
+      <Line type="monotone" dataKey="cpuMs" stroke="#3182ce" name="CPU (ms)" dot={false} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
+
+{/* Memory Metrics Chart */}
+<div className="bg-white p-4 rounded-lg shadow mt-4">
+  <h3 className="text-lg font-medium mb-3">Memory Usage (KB)</h3>
+  <ResponsiveContainer width="100%" height={250}>
+    <LineChart data={metricsData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
+      <YAxis domain={[0, memStats.max * 1.1]} />
+      <Tooltip formatter={(value) => [`${value} KB`]} />
+      <Legend />
+      <Line type="monotone" dataKey="memKB" stroke="#38a169" name="Memory (KB)" dot={false} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
+
+{/* Requests Metrics Chart */}
+<div className="bg-white p-4 rounded-lg shadow mt-4">
+  <h3 className="text-lg font-medium mb-3">Request Count</h3>
+  <ResponsiveContainer width="100%" height={250}>
+    <LineChart data={metricsData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
+      <YAxis domain={[0, reqsStats.max * 1.1]} />
+      <Tooltip />
+      <Legend />
+      <Line type="monotone" dataKey="reqs" stroke="#805ad5" name="Requests" dot={false} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>    
+
+  {/* Raw data table */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h3 className="text-lg font-medium mb-3">OverloadManager Raw Data</h3>
         <div className="overflow-x-auto">
