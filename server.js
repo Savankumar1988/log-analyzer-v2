@@ -48,6 +48,7 @@ const resultsDir = path.join(__dirname, 'results');
 
 // Serve static files from the React app
 app.use(express.static(buildDir));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Upload endpoint
 app.post('/api/upload-log', async (req, res) => {
