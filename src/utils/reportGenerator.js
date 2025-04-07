@@ -8,7 +8,7 @@ import { exportData } from './exportUtils';
 // Import these using fetch when needed - prevents bundling in main app
 const getTemplate = async () => {
   try {
-    const response = await fetch('/report-template.html');
+    const response = await fetch('http://localhost:3001/templates/report-template.html');
     if (!response.ok) {
       throw new Error(`Failed to fetch template: ${response.status} ${response.statusText}`);
     }
@@ -21,7 +21,7 @@ const getTemplate = async () => {
 
 const getCSS = async () => {
   try {
-    const response = await fetch('/report-styles.css');
+    const response = await fetch('http://localhost:3001/templates/report-styles.css');
     if (!response.ok) {
       throw new Error(`Failed to fetch CSS: ${response.status} ${response.statusText}`);
     }
