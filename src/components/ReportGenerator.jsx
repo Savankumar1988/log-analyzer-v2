@@ -20,7 +20,8 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
     includeOverview: true,
     includeRobustStats: true,
     includeOverloadManager: true,
-    includeGhostMon: true
+    includeGhostMon: true,
+    chartStyle: 'classic' // 'classic' or 'modern'
   });
   
   // Handle option changes
@@ -55,6 +56,7 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
         timeRange,
         dataType,
         filename: reportOptions.filename,
+        chartStyle: reportOptions.chartStyle, // Pass chart style option
         options: {
           includeOverview: reportOptions.includeOverview,
           includeRobustStats: reportOptions.includeRobustStats,
@@ -184,6 +186,40 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
               <label htmlFor="includeGhostMon" className="text-sm text-gray-700">
                 Include GhostMon
               </label>
+            </div>
+            
+            <div className="mt-2">
+              <label className="text-sm text-gray-600 block mb-2">Chart Style</label>
+              <div className="flex space-x-4">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="chartStyleClassic"
+                    name="chartStyle"
+                    value="classic"
+                    checked={reportOptions.chartStyle === 'classic'}
+                    onChange={handleOptionChange}
+                    className="mr-2"
+                  />
+                  <label htmlFor="chartStyleClassic" className="text-sm text-gray-700">
+                    Classic
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="chartStyleModern"
+                    name="chartStyle"
+                    value="modern"
+                    checked={reportOptions.chartStyle === 'modern'}
+                    onChange={handleOptionChange}
+                    className="mr-2"
+                  />
+                  <label htmlFor="chartStyleModern" className="text-sm text-gray-700">
+                    Modern UI
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
           

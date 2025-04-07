@@ -9,9 +9,10 @@ import { createBlobURL } from './htmlBundler.js';
  * @param {string} options.dataType - Type of log data ('standard' or 'ghostmon')
  * @param {string} options.filename - Output filename
  * @param {Object} options.options - Additional options
+ * @param {string} options.chartStyle - Chart style to use ('modern' or 'classic', defaults to 'classic')
  * @returns {Promise<void>} - Promise that resolves when report is generated
  */
-const generateReport = async ({ data, timeRange, dataType, filename, options }) => {
+const generateReport = async ({ data, timeRange, dataType, filename, options, chartStyle = 'classic' }) => {
   try {
     // Validate data
     if (!data) {
@@ -75,7 +76,7 @@ const generateReport = async ({ data, timeRange, dataType, filename, options }) 
     };
 
     // Generate HTML template
-    const template = generateHtmlTemplate(reportData);
+    const template = generateHtmlTemplate(reportData, chartStyle);
 
     // Create and download the report
     const blob = new Blob([template], { type: 'text/html' });
@@ -96,11 +97,15 @@ const generateReport = async ({ data, timeRange, dataType, filename, options }) 
 /**
  * Generate HTML template for the report
  * @param {Object} reportData - Processed report data
+ * @param {string} chartStyle - Chart style ('modern' or 'classic')
  * @returns {string} - HTML template string
  */
-const generateHtmlTemplate = (reportData) => {
+const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
   // Serialize the report data for use in the template
-  const serializedData = JSON.stringify(reportData);
+  const serializedData = JSON.stringify({
+    ...reportData,
+    chartStyle
+  });
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -139,13 +144,31 @@ const generateHtmlTemplate = (reportData) => {
       font-size: 14px;
       color: #6c757d;
     }
+    
+    /* Chart container styles */
     .chart-container {
       background-color: white;
-      border-radius: 4px;
-      padding: 15px;
+      border-radius: 8px;
+      padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       height: 300px;
+    }
+    
+    /* Modern chart style overrides */
+    .modern-charts .chart-container {
+      background-color: #f8fafc;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 24px;
+      height: 350px;
+    }
+    
+    .modern-charts .section-title {
+      color: #1e293b;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
     .tabs {
       display: flex;
@@ -194,7 +217,7 @@ const generateHtmlTemplate = (reportData) => {
   </style>
 </head>
 
-<body>
+<body class="${chartStyle === 'modern' ? 'modern-charts' : ''}">
   <div class="container">
     <header class="header">
       <div>
@@ -339,24 +362,87 @@ const generateHtmlTemplate = (reportData) => {
         avgManagerCycle: '#6f42c1'
       };
       
+      // Determine if modern styling should be used
+      const isModern = window.reportData.chartStyle === 'modern';
+      
+      // Set up modern colors if using modern style
+      if (isModern) {
+        // Update colors to match UI
+        colors.http = '#3182ce';      // blue
+        colors.https = '#805ad5';     // purple
+        colors.clientInProgress = '#e53e3e';  // red
+        colors.cpu = '#805ad5';       // purple
+      }
+      
       // Common chart options
       const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'top'
+            position: 'top',
+            labels: {
+              usePointStyle: isModern,
+              boxWidth: isModern ? 6 : 10,
+              padding: isModern ? 15 : 10,
+              font: {
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                size: isModern ? 12 : 12
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: isModern ? 'rgba(17, 24, 39, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+            padding: isModern ? 10 : 8,
+            cornerRadius: isModern ? 6 : 4,
+            titleFont: {
+              size: isModern ? 14 : 12
+            },
+            bodyFont: {
+              size: isModern ? 13 : 12
+            }
           }
         },
         scales: {
           x: {
+            grid: {
+              display: true,
+              color: isModern ? 'rgba(226, 232, 240, 0.6)' : 'rgba(0, 0, 0, 0.1)',
+              drawBorder: !isModern,
+              drawTicks: !isModern
+            },
             ticks: {
               autoSkip: true,
-              maxRotation: 45
+              maxRotation: 45,
+              color: isModern ? '#64748b' : '#666',
+              font: {
+                size: isModern ? 11 : 12
+              }
             }
           },
           y: {
-            beginAtZero: true
+            beginAtZero: true,
+            grid: {
+              display: true,
+              color: isModern ? 'rgba(226, 232, 240, 0.6)' : 'rgba(0, 0, 0, 0.1)',
+              drawBorder: !isModern
+            },
+            ticks: {
+              color: isModern ? '#64748b' : '#666',
+              font: {
+                size: isModern ? 11 : 12
+              }
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: isModern ? 0.4 : 0.3,
+            borderWidth: isModern ? 2 : 3,
+          },
+          point: {
+            radius: 0, // No points in modern style
+            hoverRadius: isModern ? 4 : 3
           }
         }
       };
@@ -378,7 +464,23 @@ const generateHtmlTemplate = (reportData) => {
                 fill: true
               }]
             },
-            options: commonOptions
+            options: {
+              ...commonOptions,
+              // If modern style, customize this specific chart
+              elements: {
+                ...commonOptions.elements,
+                line: {
+                  ...commonOptions.elements.line,
+                  borderWidth: isModern ? 2.5 : 3,
+                  tension: isModern ? 0.4 : 0.3,
+                  fill: !isModern
+                },
+                point: {
+                  radius: 0,
+                  hoverRadius: isModern ? 4 : 3
+                }
+              }
+            }
           });
         }
         
