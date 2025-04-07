@@ -38,6 +38,12 @@ app.use(fileUpload({
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'build')));
 
+// Create build directory if it doesn't exist
+const buildDir = path.join(__dirname, 'build');
+if (!fs.existsSync(buildDir)) {
+  fs.mkdirSync(buildDir);
+}
+
 // Upload endpoint
 app.post('/api/upload-log', async (req, res) => {
   try {
