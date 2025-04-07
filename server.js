@@ -35,14 +35,19 @@ app.use(fileUpload({
   limits: { fileSize: 1024 * 1024 * 1024 } // 1GB limit
 }));
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'build')));
-
-// Create build directory if it doesn't exist
+// Create directories if they don't exist
 const buildDir = path.join(__dirname, 'build');
-if (!fs.existsSync(buildDir)) {
-  fs.mkdirSync(buildDir);
-}
+const uploadsDir = path.join(__dirname, 'uploads');
+const resultsDir = path.join(__dirname, 'results');
+
+[buildDir, uploadsDir, resultsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Serve static files from the React app
+app.use(express.static(buildDir));
 
 // Upload endpoint
 app.post('/api/upload-log', async (req, res) => {
