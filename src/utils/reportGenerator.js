@@ -690,24 +690,34 @@ export const generateReport = async (options) => {
     const libraries = [
       {
         name: 'React',
-        url: 'https://unpkg.com/react@17/umd/react.production.min.js'
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js'
       },
       {
         name: 'ReactDOM',
-        url: 'https://unpkg.com/react-dom@17/umd/react-dom.production.min.js'
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js'
       },
       {
         name: 'Recharts',
-        url: 'https://unpkg.com/recharts@2.1/umd/Recharts.min.js'
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/recharts/2.7.2/Recharts.min.js'
       }
     ];
 
-    // Fetch library content
+    // Fetch library content with error handling
     const libraryContents = await Promise.all(
-      libraries.map(async (lib) => ({
-        name: lib.name,
-        content: await fetch(lib.url).then(res => res.text())
-      }))
+      libraries.map(async (lib) => {
+        try {
+          const response = await fetch(lib.url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${lib.name}: ${response.status}`);
+          }
+          const content = await response.text();
+          console.log(`Successfully loaded ${lib.name}`);
+          return { name: lib.name, content };
+        } catch (error) {
+          console.error(`Error loading ${lib.name}:`, error);
+          throw error;
+        }
+      })
     );
 
     // Generate bundled HTML
