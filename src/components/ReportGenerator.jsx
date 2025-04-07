@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateReport } from '../utils/reportGenerator';
+import { generateReport } from '../utils/reportGenerator.js';
 
 /**
  * Component for generating interactive HTML reports
