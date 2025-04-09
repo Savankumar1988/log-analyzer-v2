@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { formatMemory, formatNumber, prepareTimeSeriesData, getMetricStats } from '../utils/chartUtils';
 import MetricChart from './MetricChart';
@@ -12,18 +13,6 @@ const Overview = ({ logData }) => {
     updateAnnotation,
     deleteAnnotation
   } = useAnnotations();
-  if (!logData || !logData.robustStats.length) return <div>No data available</div>;
-
-  const lastStats = logData.robustStats[logData.robustStats.length - 1];
-  const cpuStats = getMetricStats(logData.robustStats, 'cpuAll');
-  const memStats = getMetricStats(logData.robustStats, 'memRSS');
-  const httpStats = getMetricStats(logData.robustStats, 'https');
-
-  // Prepare time series data for CPU, Memory, and HTTP requests
-  const cpuData = prepareTimeSeriesData(logData.robustStats, ['cpuAll']);
-  const memData = prepareTimeSeriesData(logData.robustStats, ['memRSS']);
-  const httpData = prepareTimeSeriesData(logData.robustStats, ['http', 'https']);
-  const clientData = prepareTimeSeriesData(logData.robustStats, ['clientInProgress', 'done']);
 
   // Define optimized handlers for annotation actions
   const handleAnnotationAdd = useCallback((chartId, annotation) => {
@@ -37,6 +26,19 @@ const Overview = ({ logData }) => {
   const handleAnnotationDelete = useCallback((chartId, annotationId) => {
     deleteAnnotation(chartId, annotationId);
   }, [deleteAnnotation]);
+
+  if (!logData || !logData.robustStats.length) return <div>No data available</div>;
+
+  const lastStats = logData.robustStats[logData.robustStats.length - 1];
+  const cpuStats = getMetricStats(logData.robustStats, 'cpuAll');
+  const memStats = getMetricStats(logData.robustStats, 'memRSS');
+  const httpStats = getMetricStats(logData.robustStats, 'https');
+
+  // Prepare time series data for CPU, Memory, and HTTP requests
+  const cpuData = prepareTimeSeriesData(logData.robustStats, ['cpuAll']);
+  const memData = prepareTimeSeriesData(logData.robustStats, ['memRSS']);
+  const httpData = prepareTimeSeriesData(logData.robustStats, ['http', 'https']);
+  const clientData = prepareTimeSeriesData(logData.robustStats, ['clientInProgress', 'done']);
 
   return (
     <div className="mb-6">
