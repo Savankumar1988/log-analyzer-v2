@@ -39,11 +39,11 @@ const MetricChart = ({
 }) => {
   // Default color scheme
   const colors = ["#3182ce", "#805ad5", "#e53e3e", "#38a169", "#ed8936", "#667eea"];
-  
+
   // Annotation state
   const [isAnnotationMode, setIsAnnotationMode] = useState(false);
   const containerRef = useRef(null);
-  
+
   // Annotation handlers - support both legacy and new API
   const handleAnnotationAdd = (annotation) => {
     if (onAnnotationAdd) {
@@ -55,7 +55,7 @@ const MetricChart = ({
       onAnnotationsChange(updatedAnnotations);
     }
   };
-  
+
   const handleAnnotationUpdate = (id, changes) => {
     if (onAnnotationUpdate) {
       // Use new granular API
@@ -68,7 +68,7 @@ const MetricChart = ({
       onAnnotationsChange(updatedAnnotations);
     }
   };
-  
+
   const handleAnnotationDelete = (id) => {
     if (onAnnotationDelete) {
       // Use new granular API
@@ -79,12 +79,12 @@ const MetricChart = ({
       onAnnotationsChange(updatedAnnotations);
     }
   };
-  
+
   // Toggle annotation mode
   const toggleAnnotationMode = () => {
     setIsAnnotationMode(!isAnnotationMode);
   };
-  
+
   return (
     <div className="bg-white p-4 rounded-lg shadow" ref={containerRef}>
       <div className="flex justify-between items-center mb-3">
@@ -96,7 +96,7 @@ const MetricChart = ({
         )}
       </div>
       <div style={{ position: 'relative' }}>
-        
+
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={data} margin={{ bottom: 40, left: 45, right: 25 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -110,7 +110,7 @@ const MetricChart = ({
               dy={20}
               interval="preserveStartEnd" // Only show start, end and some ticks in between
             />
-          
+
           {!useMultipleYAxis ? (
             <YAxis 
               domain={yAxisDomain} 
@@ -140,10 +140,10 @@ const MetricChart = ({
               <YAxis yAxisId="right" orientation="right" tickFormatter={metrics[1].name === 'hits' ? (value) => value.toFixed(2) : yAxisFormatter} />
             </>
           )}
-          
+
           <Tooltip formatter={tooltipFormatter} />
           <Legend />
-          
+
           {metrics.map((metric, index) => {
             const name = typeof metric === 'string' ? metric : metric.name;
             const dataKey = typeof metric === 'string' ? metric : metric.name;
@@ -151,7 +151,7 @@ const MetricChart = ({
             const yAxisId = useMultipleYAxis ? 
               (index < metrics.length / 2 ? "left" : "right") : 
               undefined;
-              
+
             return (
               <Line 
                 key={name}
@@ -166,7 +166,7 @@ const MetricChart = ({
           })}
         </LineChart>
           </ResponsiveContainer>
-          
+
           {/* Annotation layer - always interactive */}
           <div className="annotation-layer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'auto' }}>
             <ChartAnnotation
