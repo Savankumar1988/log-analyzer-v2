@@ -24,32 +24,37 @@ const ChartAnnotation = memo(({
   const [annotationText, setAnnotationText] = useState('');
   const dragPositionRef = useRef({ x: 0, y: 0 });
   const throttleRef = useRef(false);
-  
+
   // Handle creating a new annotation (only in annotation mode)
   const handleCreateAnnotation = useCallback((event) => {
     if (!isAnnotationMode || !containerRef.current) return;
-    
+
+    event.preventDefault();
+    event.stopPropagation();
+
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100; // x position as percentage
     const y = ((event.clientY - rect.top) / rect.height) * 100; // y position as percentage
-    
+
     const newAnnotation = {
       id: Date.now(),
       text: 'Click to edit',
       position: { x, y }
     };
-    
+
     onAnnotationAdd(newAnnotation);
-    
+
     // Immediately start editing the new annotation
-    setEditingAnnotation(newAnnotation.id);
-    setAnnotationText(newAnnotation.text);
+    setTimeout(() => {
+      setEditingAnnotation(newAnnotation.id);
+      setAnnotationText(newAnnotation.text);
+    }, 50);
   }, [isAnnotationMode, containerRef, onAnnotationAdd]);
 
   // Start dragging an annotation
   const startDrag = useCallback((e, id, currentPos) => {
     e.stopPropagation();
-    
+
     setDraggingAnnotation(id);
     setStartDragPos({
       mouseX: e.clientX,
@@ -57,7 +62,7 @@ const ChartAnnotation = memo(({
       annotX: currentPos.x,
       annotY: currentPos.y
     });
-    
+
     dragPositionRef.current = { x: currentPos.x, y: currentPos.y };
   }, []);
 
@@ -65,40 +70,40 @@ const ChartAnnotation = memo(({
   useEffect(() => {
     let animationFrameId = null;
     let timeoutId = null;
-    
+
     const handleMouseMove = (e) => {
       if (draggingAnnotation === null || !containerRef.current) return;
-      
+
       // Only update if not already throttled
       if (!throttleRef.current) {
         // Set throttle flag
         throttleRef.current = true;
-        
+
         // Use requestAnimationFrame for smoother rendering
         animationFrameId = requestAnimationFrame(() => {
           const rect = containerRef.current.getBoundingClientRect();
-          
+
           // Calculate new position
           const deltaX = e.clientX - startDragPos.mouseX;
           const deltaY = e.clientY - startDragPos.mouseY;
-          
+
           let newX = startDragPos.annotX + (deltaX / rect.width) * 100;
           let newY = startDragPos.annotY + (deltaY / rect.height) * 100;
-          
+
           // Constrain to container bounds
           newX = Math.max(0, Math.min(100, newX));
           newY = Math.max(0, Math.min(100, newY));
-          
+
           // Store the current position
           dragPositionRef.current = { x: newX, y: newY };
-          
+
           // Update annotation position visually using CSS transform for better performance
           const element = document.getElementById(`annotation-${draggingAnnotation}`);
           if (element) {
             element.style.left = `${newX}%`;
             element.style.top = `${newY}%`;
           }
-          
+
           // Reset throttle flag after short delay
           timeoutId = setTimeout(() => {
             throttleRef.current = false;
@@ -106,7 +111,7 @@ const ChartAnnotation = memo(({
         });
       }
     };
-    
+
     const handleMouseUp = () => {
       if (draggingAnnotation !== null) {
         // Update the final position in state only when drag ends
@@ -116,22 +121,22 @@ const ChartAnnotation = memo(({
         setDraggingAnnotation(null);
       }
     };
-    
+
     if (draggingAnnotation !== null) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
-    
+
     return () => {
       // Clean up all resources
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      
+
       // Cancel any pending animation frame
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
       }
-      
+
       // Clear any pending timeout
       if (timeoutId !== null) {
         clearTimeout(timeoutId);
@@ -142,7 +147,7 @@ const ChartAnnotation = memo(({
   // Handle text editing
   const handleTextClick = useCallback((e, id, text) => {
     e.stopPropagation();
-    
+
     setEditingAnnotation(id);
     setAnnotationText(text);
   }, []);
@@ -151,7 +156,7 @@ const ChartAnnotation = memo(({
   const handleTextEdit = useCallback((e, id) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      
+
       if (annotationText.trim() !== '') {
         onAnnotationUpdate(id, { text: annotationText });
       }
@@ -206,7 +211,7 @@ const ChartAnnotation = memo(({
               alignSelf: 'center'
             }}
           ></div>
-          
+
           {editingAnnotation === annotation.id ? (
             <textarea
               value={annotationText}
@@ -244,7 +249,7 @@ const ChartAnnotation = memo(({
               onClick={(e) => isAnnotationMode && handleTextClick(e, annotation.id, annotation.text)}
             >
               {annotation.text}
-              
+
               {/* Delete button - always visible for better UX */}
               <button
                 style={{
