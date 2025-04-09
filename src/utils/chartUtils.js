@@ -57,19 +57,41 @@ export const getMetricStats = (data, metricPath) => {
   return { min, max, avg, median };
 };
 
-// Convert time series data for charts with complete time range
+// Convert time series data for charts
 export const prepareTimeSeriesData = (data, metrics) => {
   if (!data || !data.length) return [];
   
-  // Find min and max timestamps
+  return data.map(entry => {
+    const result = {
+      timestamp: entry.timestamp,
+      formattedTime: formatTimestamp(entry.timestamp)
+    };
+    
+    metrics.forEach(metric => {
+      if (typeof metric === 'string') {
+        result[metric] = entry[metric];
+      } else if (metric.path) {
+        let value = entry;
+        const parts = metric.path.split('.');
+        for (const part of parts) {
+          value = value && value[part];
+        }
+        result[metric.name] = value;
+      }
+    });
+    
+    return result;
+  });
+};
+export const prepareOverloadTimeSeriesData = (data, metrics) => {
+  if (!data || !data.length) return [];
+  
   const timestamps = data.map(entry => entry.timestamp);
   const minTime = Math.min(...timestamps);
   const maxTime = Math.max(...timestamps);
   
-  // Create a map of existing entries
   const entryMap = new Map(data.map(entry => [entry.timestamp, entry]));
   
-  // Generate all timestamps in 1-second intervals
   const allTimestamps = [];
   for (let t = minTime; t <= maxTime; t++) {
     allTimestamps.push(t);
@@ -96,7 +118,6 @@ export const prepareTimeSeriesData = (data, metrics) => {
         }
       });
     } else {
-      // Fill with null for missing timestamps
       metrics.forEach(metric => {
         const metricName = typeof metric === 'string' ? metric : metric.name;
         result[metricName] = null;

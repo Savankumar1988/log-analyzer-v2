@@ -10,8 +10,8 @@ const OverloadManager = ({ logData }) => {
   const NA = "N/A";
 
   // Prepare data for charts
-  const targetData = prepareTimeSeriesData(logData.addCandidateTargets, ['triggerPct', 'denyPct', 'rule']);
-  const metricsData = prepareTimeSeriesData(
+  const targetData = prepareOverloadTimeSeriesData(logData.addCandidateTargets, ['triggerPct', 'denyPct', 'rule']);
+  const metricsData = prepareOverloadTimeSeriesData(
     logData.addCandidateTargets, 
     [
       { name: 'cpuMs', path: 'metrics.cpu' },
