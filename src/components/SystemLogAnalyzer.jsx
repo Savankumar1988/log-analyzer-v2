@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import Overview from './Overview';
 import RobustStats from './RobustStats';
 import OverloadManager from './OverloadManager';
-import GhostMonAnalyzer from './GhostMonAnalyzer';
+import GhostMonAnalyzer from './GhostMonAnalyzer'; // Assumed to be GhostMonCharts in the changes
 import FileUpload from './FileUpload';
 import LargeFileProcessor from './LargeFileProcessor';
 import TabNavigation from './TabNavigation';
@@ -20,24 +20,18 @@ const SystemLogAnalyzer = () => {
   const [timeRange, setTimeRange] = useState({ start: null, end: null });
   const [rawLogContent, setRawLogContent] = useState('');
   const [isLargeFile, setIsLargeFile] = useState(false);
-  
-  // Reference to large file processor
+  const [isGlobalAnnotationMode, setIsGlobalAnnotationMode] = useState(false); // Added annotation state
+
   const largeFileProcessorRef = useRef(null);
-  
-  // File size threshold for server processing (200MB)
   const LARGE_FILE_THRESHOLD = 200 * 1024 * 1024;
-  
+
   const handleFileUpload = (event) => {
-    // If a file is provided via input, use that
     const file = event?.target?.files?.[0];
-    
-    // Reset state
     setLoading(true);
     setError('');
     setIsLargeFile(false);
-    
+
     if (!file) {
-      // Auto-load the sample file for development/testing
       fetch('/sample-ghostmon-both-keys.log')
         .then(response => response.text())
         .then(processFileContent)
@@ -47,69 +41,55 @@ const SystemLogAnalyzer = () => {
         });
       return;
     }
-    
-    // Check file size to determine processing method
+
     if (file.size >= LARGE_FILE_THRESHOLD) {
-      // Large file - use server-side processing
       setIsLargeFile(true);
-      // Process with the large file processor
       if (largeFileProcessorRef.current && largeFileProcessorRef.current.processFile) {
         largeFileProcessorRef.current.processFile(file);
       }
     } else {
-      // Small file - use client-side processing
       processFileBrowser(file);
     }
   };
-  
-  // Client-side processing for smaller files
+
   const processFileBrowser = (file) => {
     const reader = new FileReader();
     const isGzipped = file.name.toLowerCase().endsWith('.gz');
-    
+
     reader.onload = (e) => {
       try {
         let content;
-        
         if (isGzipped) {
-          // For .gz files, decompress the content
           const compressed = new Uint8Array(e.target.result);
           const decompressed = pako.inflate(compressed);
           content = new TextDecoder('utf-8').decode(decompressed);
         } else {
-          // For .log and .txt files, use the text directly
           content = e.target.result;
         }
-        
         processFileContent(content);
       } catch (err) {
         setError('Error processing file: ' + (err.message || 'Unknown error'));
         setLoading(false);
       }
     };
-    
+
     reader.onerror = () => {
       setError('Failed to read file');
       setLoading(false);
     };
-    
+
     if (isGzipped) {
       reader.readAsArrayBuffer(file);
     } else {
       reader.readAsText(file);
     }
   };
-  
-  // Process content regardless of source
+
   const processFileContent = (content) => {
     try {
-      // Save the raw log content for GhostMon analyzer
       setRawLogContent(content);
-      
       const { data, timeRange, error } = parseLogData(content);
-      
       if (error) {
-        // If main parsing fails, don't set an error - this allows GhostMon to still work
         console.warn('Main log parsing error:', error);
         setLogData(null);
       } else {
@@ -122,36 +102,30 @@ const SystemLogAnalyzer = () => {
       setLoading(false);
     }
   };
-  
-  // Handler for server-processed data
+
   const handleServerProcessedData = (data) => {
     setLoading(false);
-    
     if (!data) {
       setError('No data returned from server');
       return;
     }
-    
     if (data.type === 'standard') {
       setLogData(data.data);
       setTimeRange(data.timeRange);
-      setRawLogContent(''); // No raw content for server processing
+      setRawLogContent('');
     } else if (data.type === 'ghostmon') {
-      // For GhostMon data, we need to auto-switch to that tab
       setActiveTab('ghostMon');
-      setRawLogContent(JSON.stringify(data.data)); // Pass data as JSON string
+      setRawLogContent(JSON.stringify(data.data));
     } else {
       setError('Unknown data type returned from server');
     }
   };
-  
-  // Handle server processing errors
+
   const handleServerError = (errorMsg) => {
     setLoading(false);
     setError('Server processing error: ' + errorMsg);
   };
-  
-  // Auto-load the sample file on initial mount
+
   React.useEffect(() => {
     handleFileUpload();
   }, []);
@@ -163,29 +137,37 @@ const SystemLogAnalyzer = () => {
     { id: 'ghostMon', label: 'GhostMon Analyzer' }
   ];
 
-  // Main render function
+  const renderAnnotationButton = () => (
+    <div className="mb-4"> {/* Added container for the button */}
+      <button
+        onClick={() => setIsGlobalAnnotationMode(!isGlobalAnnotationMode)}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        {isGlobalAnnotationMode ? 'Disable Annotations' : 'Enable Annotations'}
+      </button>
+    </div>
+  );
+
+
   return (
     <div className={`p-4 max-w-5xl mx-auto ${isLargeFile ? 'large-file-active' : ''}`}>
       <h1 className="text-3xl font-bold mb-4 text-center">System Log Analyzer</h1>
-      
+
       <div className="flex items-center mb-4">
         <FileUpload onFileUpload={handleFileUpload} />
-        <button 
+        <button
           className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           onClick={() => {
             setIsLargeFile(true);
-            // Create a mock file object that will trigger large file processing
             const mockFile = new File(
-              ["test content".repeat(1000)], 
-              "large-test-file.log", 
+              ["test content".repeat(1000)],
+              "large-test-file.log",
               { type: "text/plain" }
             );
-            // Set size property to exceed the threshold
             Object.defineProperty(mockFile, 'size', {
               value: LARGE_FILE_THRESHOLD + 1000,
               writable: false
             });
-            // Process with the large file processor
             if (largeFileProcessorRef.current && largeFileProcessorRef.current.processFile) {
               largeFileProcessorRef.current.processFile(mockFile);
             }
@@ -194,7 +176,7 @@ const SystemLogAnalyzer = () => {
           Simulate Large File
         </button>
       </div>
-      
+
       {isLargeFile && (
         <div className="mt-2 mb-4 bg-blue-50 p-3 rounded-md border border-blue-200 large-file-progress-container">
           <div className="font-medium mb-1 text-blue-800 text-lg flex items-center">
@@ -206,7 +188,7 @@ const SystemLogAnalyzer = () => {
           <div className="text-gray-700 mb-2">
             This file is larger than 200MB. Processing on the server for better performance.
           </div>
-          <LargeFileProcessor 
+          <LargeFileProcessor
             onFileProcessed={(data) => {
               handleServerProcessedData(data);
               setIsLargeFile(false);
@@ -216,21 +198,20 @@ const SystemLogAnalyzer = () => {
           />
         </div>
       )}
-      
-      {/* Only show the loading indicator when loading regular files, not when processing large files */}
+
       {loading && !isLargeFile && (
         <div className="text-center py-12">
           <div className="text-lg">Loading and analyzing log data...</div>
           <div className="mt-2 text-gray-500">This may take a moment</div>
         </div>
       )}
-      
+
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {!loading && !error && (
         <div>
           {logData && (
@@ -243,40 +224,39 @@ const SystemLogAnalyzer = () => {
               </div>
             </div>
           )}
-          
-          <TabNavigation 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab} 
-            tabs={tabs} 
+
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabs={tabs}
           />
-          
+          {renderAnnotationButton()} {/* Moved annotation button here */}
           {activeTab === 'overview' && logData ? (
-            <Overview logData={logData} />
+            <Overview logData={logData} isAnnotationMode={isGlobalAnnotationMode} />
           ) : (
             activeTab === 'overview' && <div className="text-center py-6">No overview data available</div>
           )}
-          
+
           {activeTab === 'robustStats' && logData ? (
-            <RobustStats logData={logData} />
+            <RobustStats logData={logData} isAnnotationMode={isGlobalAnnotationMode} />
           ) : (
             activeTab === 'robustStats' && <div className="text-center py-6">No Robust stats data available</div>
           )}
-          
+
           {activeTab === 'overloadManager' && logData ? (
-            <OverloadManager logData={logData} />
+            <OverloadManager logData={logData} isAnnotationMode={isGlobalAnnotationMode} />
           ) : (
             activeTab === 'overloadManager' && <div className="text-center py-6">No OverloadManager data available</div>
           )}
-          {activeTab === 'ghostMon' && <GhostMonAnalyzer logFileContent={rawLogContent} isLoading={loading && !isLargeFile} />}
-          
-          {/* Report Generator */}
+          {activeTab === 'ghostMon' && <GhostMonAnalyzer logFileContent={rawLogContent} isLoading={loading && !isLargeFile} isAnnotationMode={isGlobalAnnotationMode}/>}
+
           {!loading && (
-            <ReportGenerator 
-              logData={activeTab === 'ghostMon' 
-                ? (rawLogContent && rawLogContent.startsWith('[{') 
-                  ? JSON.parse(rawLogContent) 
-                  : (activeTab === 'ghostMon' && document.getElementById('ghostmon-analyzer-data') 
-                    ? JSON.parse(document.getElementById('ghostmon-analyzer-data').textContent || '[]') 
+            <ReportGenerator
+              logData={activeTab === 'ghostMon'
+                ? (rawLogContent && rawLogContent.startsWith('[{')
+                  ? JSON.parse(rawLogContent)
+                  : (activeTab === 'ghostMon' && document.getElementById('ghostmon-analyzer-data')
+                    ? JSON.parse(document.getElementById('ghostmon-analyzer-data').textContent || '[]')
                     : null))
                 : logData}
               timeRange={timeRange}

@@ -96,18 +96,7 @@ const MetricChart = ({
         )}
       </div>
       <div style={{ position: 'relative' }}>
-        <div className="absolute top-0 right-0 z-10 m-2">
-          <button
-            onClick={toggleAnnotationMode}
-            className={`px-3 py-1 text-xs rounded shadow ${
-              isAnnotationMode 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {isAnnotationMode ? 'Exit Annotation' : 'Annotate'}
-          </button>
-        </div>
+        
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={data} margin={{ bottom: 40, left: 45, right: 25 }}>
             <CartesianGrid strokeDasharray="3 3" />
