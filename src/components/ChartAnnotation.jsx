@@ -27,7 +27,14 @@ const ChartAnnotation = memo(({
 
   // Handle creating a new annotation (only in annotation mode)
   const handleCreateAnnotation = useCallback((event) => {
-    if (!isAnnotationMode || !containerRef.current) return;
+    console.log('ChartAnnotation: Click event received');
+    console.log('ChartAnnotation: Annotation mode:', isAnnotationMode);
+    console.log('ChartAnnotation: Container ref:', !!containerRef.current);
+    
+    if (!isAnnotationMode || !containerRef.current) {
+      console.log('ChartAnnotation: Click ignored - mode or container invalid');
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();

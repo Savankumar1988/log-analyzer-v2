@@ -46,13 +46,18 @@ const MetricChart = ({
 
   // Annotation handlers - support both legacy and new API
   const handleAnnotationAdd = (annotation) => {
+    console.log('MetricChart: Attempting to add annotation:', annotation);
+    console.log('MetricChart: Current annotation mode:', isAnnotationMode);
+    
     if (onAnnotationAdd) {
-      // Use new granular API
+      console.log('MetricChart: Using granular API');
       onAnnotationAdd(annotation);
     } else if (onAnnotationsChange) {
-      // Use legacy API
+      console.log('MetricChart: Using legacy API');
       const updatedAnnotations = [...annotations, annotation];
       onAnnotationsChange(updatedAnnotations);
+    } else {
+      console.warn('MetricChart: No annotation handlers available');
     }
   };
 

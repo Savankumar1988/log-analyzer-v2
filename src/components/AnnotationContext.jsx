@@ -46,6 +46,8 @@ export const AnnotationProvider = ({ children }) => {
 
   // Add a single annotation to a chart (new optimized method)
   const addAnnotation = useCallback((chartId, annotation) => {
+    console.log('AnnotationContext: Adding annotation for chart:', chartId);
+    console.log('AnnotationContext: Annotation data:', annotation);
     setAnnotations(prevAnnotations => {
       const chartAnnotations = prevAnnotations[chartId] || [];
       return {
