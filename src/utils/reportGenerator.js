@@ -12,7 +12,7 @@ import { createBlobURL } from './htmlBundler.js';
  * @param {string} options.chartStyle - Chart style to use ('modern' or 'classic', defaults to 'classic')
  * @returns {Promise<void>} - Promise that resolves when report is generated
  */
-const generateReport = async ({ data, timeRange, dataType, filename, options, chartStyle = 'classic' }) => {
+const generateReport = async ({ data, timeRange, dataType, filename, options, chartStyle = 'classic', annotations = {} }) => {
   try {
     // Validate data
     if (!data) {
@@ -76,7 +76,7 @@ const generateReport = async ({ data, timeRange, dataType, filename, options, ch
     };
 
     // Generate HTML template
-    const template = generateHtmlTemplate(reportData, chartStyle);
+    const template = generateHtmlTemplate(reportData, chartStyle, annotations);
 
     // Create and download the report
     const blob = new Blob([template], { type: 'text/html' });
@@ -98,13 +98,15 @@ const generateReport = async ({ data, timeRange, dataType, filename, options, ch
  * Generate HTML template for the report
  * @param {Object} reportData - Processed report data
  * @param {string} chartStyle - Chart style ('modern' or 'classic')
+ * @param {Object} annotations - Chart annotations to include in the report
  * @returns {string} - HTML template string
  */
-const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
+const generateHtmlTemplate = (reportData, chartStyle = 'classic', annotations = {}) => {
   // Serialize the report data for use in the template
   const serializedData = JSON.stringify({
     ...reportData,
-    chartStyle
+    chartStyle,
+    annotations
   });
   
   return `<!DOCTYPE html>
@@ -116,6 +118,8 @@ const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
   
   <!-- Import Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <!-- Import Chart.js Annotation plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   
   <style>
     body {
@@ -340,9 +344,65 @@ const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
       renderDataTable();
     });
     
+    // Function to render annotations on charts
+    function renderAnnotations(chart, chartId) {
+      if (!window.reportData.annotations || !window.reportData.annotations[chartId]) {
+        return;
+      }
+      
+      const chartAnnotations = window.reportData.annotations[chartId];
+      if (!chartAnnotations.length) return;
+      
+      // Register the annotation plugin for this chart if not already registered
+      if (!chart.options.plugins.annotation) {
+        chart.options.plugins.annotation = {
+          annotations: {}
+        };
+      }
+      
+      // Add each annotation to the chart
+      chartAnnotations.forEach((annotation, index) => {
+        // Calculate position based on percentage
+        const xPosition = annotation.position.x / 100;
+        const yPosition = annotation.position.y / 100;
+        
+        // Create a unique ID for the annotation
+        const annotationId = 'annotation-' + index;
+        
+        // Add the annotation to the chart
+        chart.options.plugins.annotation.annotations[annotationId] = {
+          type: 'label',
+          xValue: xPosition * chart.data.labels.length,
+          yValue: yPosition * (chart.scales.y.max - chart.scales.y.min) + chart.scales.y.min,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderColor: 'rgba(0,0,0,0.1)',
+          content: [annotation.text],
+          font: {
+            size: 11,
+            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          },
+          color: '#333',
+          padding: 6,
+          // Add a "handle" point at the annotation position
+          callout: {
+            display: true,
+            borderColor: 'rgba(245, 158, 11, 0.9)',
+            borderWidth: 2,
+            side: 5, // Shorter callout line
+            start: 0.5 // Callout starts in the middle
+          }
+        };
+      });
+      
+      // Update the chart to reflect the annotations
+      chart.update();
+    }
+    
     // Create charts
     function createCharts() {
-      const { robustStats, overloadData } = window.reportData;
+      const { robustStats, overloadData, annotations } = window.reportData;
       
       // Set up chart colors
       const colors = {
@@ -482,6 +542,11 @@ const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
               }
             }
           });
+          
+          // Add annotations if available
+          if (annotations && annotations.cpuChart) {
+            renderAnnotations(charts.cpu, 'cpuChart');
+          }
         }
         
         // Memory Chart
@@ -502,6 +567,11 @@ const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
             },
             options: commonOptions
           });
+          
+          // Add annotations if available
+          if (annotations && annotations.memoryChart) {
+            renderAnnotations(charts.memory, 'memoryChart');
+          }
         }
         
         // Connections Chart
@@ -530,6 +600,11 @@ const generateHtmlTemplate = (reportData, chartStyle = 'classic') => {
             },
             options: commonOptions
           });
+          
+          // Add annotations if available
+          if (annotations && annotations.connectionsChart) {
+            renderAnnotations(charts.connections, 'connectionsChart');
+          }
         }
         
         // Client States Chart - The key missing chart with clientInProgress, done, fwdInProgress

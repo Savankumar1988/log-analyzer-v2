@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import ChartAnnotation from './ChartAnnotation';
 
 // Custom X-axis tick component for rotated labels
 // Custom X-axis tick to match styling across all charts
@@ -29,27 +30,97 @@ const MetricChart = ({
   yAxisFormatter = null,
   tooltipFormatter = null,
   yAxisDomain = ['dataMin', 'dataMax'],
-  useMultipleYAxis = false
+  useMultipleYAxis = false,
+  annotations = [],
+  onAnnotationsChange,
+  onAnnotationAdd,
+  onAnnotationUpdate,
+  onAnnotationDelete
 }) => {
   // Default color scheme
   const colors = ["#3182ce", "#805ad5", "#e53e3e", "#38a169", "#ed8936", "#667eea"];
   
+  // Annotation state
+  const [isAnnotationMode, setIsAnnotationMode] = useState(false);
+  const containerRef = useRef(null);
+  
+  // Annotation handlers - support both legacy and new API
+  const handleAnnotationAdd = (annotation) => {
+    if (onAnnotationAdd) {
+      // Use new granular API
+      onAnnotationAdd(annotation);
+    } else if (onAnnotationsChange) {
+      // Use legacy API
+      const updatedAnnotations = [...annotations, annotation];
+      onAnnotationsChange(updatedAnnotations);
+    }
+  };
+  
+  const handleAnnotationUpdate = (id, changes) => {
+    if (onAnnotationUpdate) {
+      // Use new granular API
+      onAnnotationUpdate(id, changes);
+    } else if (onAnnotationsChange) {
+      // Use legacy API
+      const updatedAnnotations = annotations.map(annotation => 
+        annotation.id === id ? { ...annotation, ...changes } : annotation
+      );
+      onAnnotationsChange(updatedAnnotations);
+    }
+  };
+  
+  const handleAnnotationDelete = (id) => {
+    if (onAnnotationDelete) {
+      // Use new granular API
+      onAnnotationDelete(id);
+    } else if (onAnnotationsChange) {
+      // Use legacy API
+      const updatedAnnotations = annotations.filter(annotation => annotation.id !== id);
+      onAnnotationsChange(updatedAnnotations);
+    }
+  };
+  
+  // Toggle annotation mode
+  const toggleAnnotationMode = () => {
+    setIsAnnotationMode(!isAnnotationMode);
+  };
+  
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      {title && <h3 className="text-lg font-medium mb-3">{title}</h3>}
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ bottom: 40, left: 45, right: 25 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="formattedTime"
-            height={80}
-            tickMargin={25}
-            tick={<CustomXAxisTick />}
-            angle={-45}
-            textAnchor="end"
-            dy={20}
-            interval="preserveStartEnd" // Only show start, end and some ticks in between
-          />
+    <div className="bg-white p-4 rounded-lg shadow" ref={containerRef}>
+      <div className="flex justify-between items-center mb-3">
+        {title && <h3 className="text-lg font-medium">{title}</h3>}
+        {annotations && annotations.length > 0 && (
+          <div className="text-xs text-gray-500">
+            {annotations.length} annotation{annotations.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <div className="absolute top-0 right-0 z-10 m-2">
+          <button
+            onClick={toggleAnnotationMode}
+            className={`px-3 py-1 text-xs rounded shadow ${
+              isAnnotationMode 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {isAnnotationMode ? 'Exit Annotation' : 'Annotate'}
+          </button>
+        </div>
+        <ResponsiveContainer width="100%" height={height}>
+          <LineChart data={data} margin={{ bottom: 40, left: 45, right: 25 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="formattedTime"
+              height={80}
+              tickMargin={25}
+              tick={<CustomXAxisTick />}
+              angle={-45}
+              textAnchor="end"
+              dy={20}
+              interval="preserveStartEnd" // Only show start, end and some ticks in between
+            />
           
           {!useMultipleYAxis ? (
             <YAxis 
@@ -105,7 +176,20 @@ const MetricChart = ({
             );
           })}
         </LineChart>
-      </ResponsiveContainer>
+          </ResponsiveContainer>
+          
+          {/* Annotation layer - always interactive */}
+          <div className="annotation-layer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'auto' }}>
+            <ChartAnnotation
+              annotations={annotations}
+              onAnnotationAdd={handleAnnotationAdd}
+              onAnnotationUpdate={handleAnnotationUpdate}
+              onAnnotationDelete={handleAnnotationDelete}
+              isAnnotationMode={isAnnotationMode}
+              containerRef={containerRef}
+            />
+          </div>
+        </div>
     </div>
   );
 };

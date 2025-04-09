@@ -1,9 +1,17 @@
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useCallback } from 'react';
 import { formatMemory, formatNumber, prepareTimeSeriesData, getMetricStats } from '../utils/chartUtils';
+import MetricChart from './MetricChart';
 import StatCard from './StatCard';
+import { useAnnotations } from './AnnotationContext';
 
 const Overview = ({ logData }) => {
+  // Get annotations from context with optimized methods
+  const { 
+    getAnnotationsForChart, 
+    addAnnotation,
+    updateAnnotation,
+    deleteAnnotation
+  } = useAnnotations();
   if (!logData || !logData.robustStats.length) return <div>No data available</div>;
 
   const lastStats = logData.robustStats[logData.robustStats.length - 1];
@@ -16,6 +24,19 @@ const Overview = ({ logData }) => {
   const memData = prepareTimeSeriesData(logData.robustStats, ['memRSS']);
   const httpData = prepareTimeSeriesData(logData.robustStats, ['http', 'https']);
   const clientData = prepareTimeSeriesData(logData.robustStats, ['clientInProgress', 'done']);
+
+  // Define optimized handlers for annotation actions
+  const handleAnnotationAdd = useCallback((chartId, annotation) => {
+    addAnnotation(chartId, annotation);
+  }, [addAnnotation]);
+
+  const handleAnnotationUpdate = useCallback((chartId, annotationId, changes) => {
+    updateAnnotation(chartId, annotationId, changes);
+  }, [updateAnnotation]);
+
+  const handleAnnotationDelete = useCallback((chartId, annotationId) => {
+    deleteAnnotation(chartId, annotationId);
+  }, [deleteAnnotation]);
 
   return (
     <div className="mb-6">
@@ -45,63 +66,57 @@ const Overview = ({ logData }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">CPU Utilization Over Time</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={cpuData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis domain={[0, Math.max(100, cpuStats.max)]} />
-              <Tooltip formatter={(value) => [`${value}%`, 'CPU']} labelFormatter={(time) => `Time: ${time}`} />
-              <Line type="monotone" dataKey="cpuAll" stroke="#3182ce" name="CPU %" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <MetricChart 
+          data={cpuData}
+          title="CPU Utilization Over Time"
+          metrics={[{name: 'cpuAll', color: '#3182ce'}]}
+          yAxisDomain={[0, Math.max(100, cpuStats.max)]}
+          tooltipFormatter={(value) => [`${value}%`, 'CPU']}
+          annotations={getAnnotationsForChart('cpuChart')}
+          onAnnotationAdd={(annotation) => handleAnnotationAdd('cpuChart', annotation)}
+          onAnnotationUpdate={(id, changes) => handleAnnotationUpdate('cpuChart', id, changes)}
+          onAnnotationDelete={(id) => handleAnnotationDelete('cpuChart', id)}
+        />
 
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">Memory Usage Over Time</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={memData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis domain={['dataMin', 'dataMax']} tickFormatter={(value) => `${(value / 1024 / 1024).toFixed(1)} GB`} />
-              <Tooltip formatter={(value) => [formatMemory(value), 'Memory RSS']} labelFormatter={(time) => `Time: ${time}`} />
-              <Line type="monotone" dataKey="memRSS" stroke="#38a169" name="Memory RSS" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <MetricChart 
+          data={memData}
+          title="Memory Usage Over Time"
+          metrics={[{name: 'memRSS', color: '#38a169'}]}
+          yAxisFormatter={(value) => `${(value / 1024 / 1024).toFixed(1)} GB`}
+          tooltipFormatter={(value) => [formatMemory(value), 'Memory RSS']}
+          annotations={getAnnotationsForChart('memoryChart')}
+          onAnnotationAdd={(annotation) => handleAnnotationAdd('memoryChart', annotation)}
+          onAnnotationUpdate={(id, changes) => handleAnnotationUpdate('memoryChart', id, changes)}
+          onAnnotationDelete={(id) => handleAnnotationDelete('memoryChart', id)}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">HTTP/HTTPS Requests</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={httpData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="http" stroke="#3182ce" name="HTTP" dot={false} />
-              <Line type="monotone" dataKey="https" stroke="#805ad5" name="HTTPS" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <MetricChart 
+          data={httpData}
+          title="HTTP/HTTPS Requests"
+          metrics={[
+            {name: 'http', color: '#3182ce'},
+            {name: 'https', color: '#805ad5'}
+          ]}
+          annotations={getAnnotationsForChart('httpChart')}
+          onAnnotationAdd={(annotation) => handleAnnotationAdd('httpChart', annotation)}
+          onAnnotationUpdate={(id, changes) => handleAnnotationUpdate('httpChart', id, changes)}
+          onAnnotationDelete={(id) => handleAnnotationDelete('httpChart', id)}
+        />
 
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-3">Client Requests</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={clientData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="formattedTime" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} dy={20} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="clientInProgress" stroke="#e53e3e" name="In Progress" dot={false} />
-              <Line type="monotone" dataKey="done" stroke="#38a169" name="Done" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <MetricChart 
+          data={clientData}
+          title="Client Requests"
+          metrics={[
+            {name: 'clientInProgress', color: '#e53e3e'},
+            {name: 'done', color: '#38a169'}
+          ]}
+          annotations={getAnnotationsForChart('clientRequestsChart')}
+          onAnnotationAdd={(annotation) => handleAnnotationAdd('clientRequestsChart', annotation)}
+          onAnnotationUpdate={(id, changes) => handleAnnotationUpdate('clientRequestsChart', id, changes)}
+          onAnnotationDelete={(id) => handleAnnotationDelete('clientRequestsChart', id)}
+        />
       </div>
     </div>
   );

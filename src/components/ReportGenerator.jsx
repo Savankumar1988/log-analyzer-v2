@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { generateReport } from '../utils/reportGenerator.js';
+import { useAnnotations } from './AnnotationContext';
 
 /**
  * Component for generating interactive HTML reports
@@ -10,6 +11,8 @@ import { generateReport } from '../utils/reportGenerator.js';
  * @param {boolean} props.disabled - Whether the button should be disabled
  */
 const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) => {
+  // Get annotations from context
+  const { getAllAnnotations } = useAnnotations();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [showOptions, setShowOptions] = useState(false);
@@ -21,6 +24,7 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
     includeRobustStats: true,
     includeOverloadManager: true,
     includeGhostMon: true,
+    includeAnnotations: true,
     chartStyle: 'classic' // 'classic' or 'modern'
   });
   
@@ -50,6 +54,9 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
         throw new Error('No data available to generate report');
       }
       
+      // Get all annotations from context
+      const annotations = getAllAnnotations();
+      
       // Generate the report
       await generateReport({
         data: logData,
@@ -57,11 +64,13 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
         dataType,
         filename: reportOptions.filename,
         chartStyle: reportOptions.chartStyle, // Pass chart style option
+        annotations: reportOptions.includeAnnotations ? annotations : {}, // Pass annotations if option is enabled
         options: {
           includeOverview: reportOptions.includeOverview,
           includeRobustStats: reportOptions.includeRobustStats,
           includeOverloadManager: reportOptions.includeOverloadManager,
-          includeGhostMon: reportOptions.includeGhostMon
+          includeGhostMon: reportOptions.includeGhostMon,
+          includeAnnotations: reportOptions.includeAnnotations
         }
       });
       
@@ -185,6 +194,20 @@ const ReportGenerator = ({ logData, timeRange, activeTab, disabled = false }) =>
               />
               <label htmlFor="includeGhostMon" className="text-sm text-gray-700">
                 Include GhostMon
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="includeAnnotations"
+                name="includeAnnotations"
+                checked={reportOptions.includeAnnotations}
+                onChange={handleOptionChange}
+                className="mr-2"
+              />
+              <label htmlFor="includeAnnotations" className="text-sm text-gray-700">
+                Include Chart Annotations
               </label>
             </div>
             
