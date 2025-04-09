@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { prepareTimeSeriesData, getMetricStats } from '../utils/chartUtils';
+import { prepareTimeSeriesData, prepareOverloadTimeSeriesData, getMetricStats } from '../utils/chartUtils';
 // StatCard no longer used after converting to table format
 
 const OverloadManager = ({ logData }) => {
