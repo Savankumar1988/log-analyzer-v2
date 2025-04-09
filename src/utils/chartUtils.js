@@ -86,43 +86,24 @@ export const prepareTimeSeriesData = (data, metrics) => {
 export const prepareOverloadTimeSeriesData = (data, metrics) => {
   if (!data || !data.length) return [];
   
-  const timestamps = data.map(entry => entry.timestamp);
-  const minTime = Math.min(...timestamps);
-  const maxTime = Math.max(...timestamps);
-  
-  const entryMap = new Map(data.map(entry => [entry.timestamp, entry]));
-  
-  const allTimestamps = [];
-  for (let t = minTime; t <= maxTime; t++) {
-    allTimestamps.push(t);
-  }
-  
-  return allTimestamps.map(timestamp => {
-    const entry = entryMap.get(timestamp);
+  return data.map(entry => {
     const result = {
-      timestamp,
-      formattedTime: formatTimestamp(timestamp)
+      timestamp: entry.timestamp,
+      formattedTime: formatTimestamp(entry.timestamp)
     };
     
-    if (entry) {
-      metrics.forEach(metric => {
-        if (typeof metric === 'string') {
-          result[metric] = entry[metric];
-        } else if (metric.path) {
-          let value = entry;
-          const parts = metric.path.split('.');
-          for (const part of parts) {
-            value = value && value[part];
-          }
-          result[metric.name] = value;
+    metrics.forEach(metric => {
+      if (typeof metric === 'string') {
+        result[metric] = entry[metric];
+      } else if (metric.path) {
+        let value = entry;
+        const parts = metric.path.split('.');
+        for (const part of parts) {
+          value = value && value[part];
         }
-      });
-    } else {
-      metrics.forEach(metric => {
-        const metricName = typeof metric === 'string' ? metric : metric.name;
-        result[metricName] = null;
-      });
-    }
+        result[metric.name] = value;
+      }
+    });
     
     return result;
   });
